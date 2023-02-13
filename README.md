@@ -49,6 +49,18 @@ https://floorplancad.github.io/ -> Train set1, Train set2, Test set
 ./pre.sh
 ```
 
+## Train
+
+```bash
+./train.sh
+```
+
+## Eval
+
+```bash
+./eval.sh
+```
+
 ## Run
 
 ```bash
