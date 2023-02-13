@@ -17,23 +17,42 @@ conda activate cadt
 ## Download
 
 ```bash
-https://github.com/HRNet/HRNet-Image-Classification
+https://github.com/HRNet/HRNet-Image-Classification -> HRNet-W48-C
 ->
-HRNet-W48-C
-->
-cad-transformer/pretrained/
+/home/chli/chLi/HRNet/hrnetv2_w48_imagenet_pretrained.pth
 ```
 
 ```bash
-https://floorplancad.github.io/
+https://floorplancad.github.io/ -> Train set1, Train set2, Test set
 ->
 /home/chli/chLi/FloorPlanCAD/
+  |
+  |-train-00/
+  |  |-coco_vis/
+  |  |-*.svg
+  |  |-*.png
+  |
+  |-train-01/
+  |  |-coco_vis/
+  |  |-*.svg
+  |  |-*.png
+  |
+  |-test-00/
+  |  |-coco_vis/
+  |  |-*.svg
+  |  |-*.png
 ```
 
-and run
+## Prepare
 
 ```bash
-python cad_transformer/Pre/download_data.py --data_save_dir /home/chli/chLi/CADTransformer
+./pre.sh
+```
+
+## Run
+
+```bash
+python demo.py
 ```
 
 ## Enjoy it~
