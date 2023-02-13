@@ -3,28 +3,31 @@ import os
 import argparse
 import gdown
 
+
 def parse_args():
     '''
     Arguments
     '''
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--data_save_dir', type=str, default="./dataset",
-                        help='save the downloaded data'
-                        )
-    parser.add_argument('--train_url', type=str,
+    parser.add_argument('--data_save_dir',
+                        type=str,
+                        default="./dataset",
+                        help='save the downloaded data')
+    parser.add_argument('--train_url',
+                        type=str,
                         default="16McNNY_-Y2uVnq42ntZTdYKPWgOZxwp3",
-                        help='google drive id'
-                        )
-    parser.add_argument('--val_url', type=str,
+                        help='google drive id')
+    parser.add_argument('--val_url',
+                        type=str,
                         default="1xgLqcj91i13_3vhfsUYcRYh3PhFYB9LJ",
-                        help='google drive id'
-                        )
-    parser.add_argument('--test_url', type=str,
+                        help='google drive id')
+    parser.add_argument('--test_url',
+                        type=str,
                         default="1Hc4-ggsUMoB_5uqJdqYRn9K73QS8rOgG",
-                        help='google drive id'
-                        )
+                        help='google drive id')
     args = parser.parse_args()
     return args
+
 
 def main():
     '''
@@ -62,6 +65,7 @@ def main():
     os.makedirs(unzip_dir, exist_ok=True)
     cmd = f"unzip {zip_path} -d {unzip_dir}"
     os.system(cmd)
+
 
 if __name__ == '__main__':
     main()

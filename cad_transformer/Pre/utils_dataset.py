@@ -3,6 +3,7 @@ import sys
 import time
 import math
 import copy
+import signal
 import numpy as np
 from xml.dom import minidom
 import xml.etree.ElementTree as ET

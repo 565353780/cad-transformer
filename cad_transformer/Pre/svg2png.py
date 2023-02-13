@@ -1,4 +1,7 @@
 '''Convert original svg files to png for HRNet feature extraction'''
+import sys
+sys.path.append("./")
+
 import os
 import shutil
 import random
@@ -6,7 +9,10 @@ import argparse
 from glob import glob
 from multiprocessing import Pool
 from functools import partial
-from _utils_dataset import *
+
+from cad_transformer.Pre.utils_dataset import \
+    init_worker, svg_reader, svg_writer, svg2png, parse_path
+
 
 def cvt_svg2png(svg_path, replace1, replace2, scale=7):
     '''Function: convert svg to png
@@ -14,6 +20,7 @@ def cvt_svg2png(svg_path, replace1, replace2, scale=7):
     out_path = svg_path.replace(replace1, replace2)
     out_path = out_path.replace(".svg", ".png")
     svg2png(svg_path, out_path, scale=scale)
+
 
 def combine_trainset(dir0, dir1, dir_all):
     '''Function: Combine the two training subsets into one
@@ -29,6 +36,7 @@ def combine_trainset(dir0, dir1, dir_all):
             print(f"Duplicated:  > {save_path}")
         shutil.copy(f, save_path)
 
+
 def cvt_line_color(svg_path, output_dir=None):
     '''Convert line color into black to align with other floorplan dataset
     '''
@@ -40,6 +48,7 @@ def cvt_line_color(svg_path, output_dir=None):
         svg_writer(tmp, svg_path)
     else:
         raise NotImplementedError
+
 
 def scaleSVG(svg_path, scale, cvt_color=False):
     '''Scale the coordinates of segments
@@ -53,7 +62,7 @@ def scaleSVG(svg_path, scale, cvt_color=False):
         if tag == "svg":
             viewBox = line["viewBox"]
             viewBox = viewBox.split(" ")
-            viewBox = [str(float(v)*scale) for v in viewBox]
+            viewBox = [str(float(v) * scale) for v in viewBox]
             line["viewBox"] = " ".join(viewBox)
             if cvt_color:
                 line["style"] = "background-color: #255255255;"
@@ -63,7 +72,8 @@ def scaleSVG(svg_path, scale, cvt_color=False):
             line["d"] = path_repre.scaled(scale, scale).d()
 
         if tag == "circle":
-            cx, cy, rad = float(line["cx"]), float(line["cy"]), float(line["r"])
+            cx, cy, rad = float(line["cx"]), float(line["cy"]), float(
+                line["r"])
             line["cx"], line["cy"], line["r"] = \
                      str(cx * scale), str(cy * scale), str(rad * scale)
 
@@ -79,23 +89,37 @@ def scaleSVG(svg_path, scale, cvt_color=False):
                 transform = transform.split(",")
                 if len(transform) == 3:
                     transform = [float(tf) for tf in transform]
-                    transform = "rotate({},{},{})".format(str(transform[0]),str(cx * scale),str(cy * scale))
+                    transform = "rotate({},{},{})".format(
+                        str(transform[0]), str(cx * scale), str(cy * scale))
                     line["transform"] = transform
         if "stroke-width" in line.keys():
-            line["stroke-width"] = str(float(line["stroke-width"])*scale)
+            line["stroke-width"] = str(float(line["stroke-width"]) * scale)
 
     svg_writer(parsing_list, out_path)
     return out_path
 
+
 def main():
     '''Main entrance'''
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--data_save_dir', type=str, help='download dir from download_data.py', required=True)
-    parser.add_argument('--scale', type=int, help='scale for svg->png', default=5)
-    parser.add_argument('--val_ratio', type=float, help='pick validation set', default=0.05)
+    parser.add_argument('--data_save_dir',
+                        type=str,
+                        help='download dir from download_data.py',
+                        required=True)
+    parser.add_argument('--scale',
+                        type=int,
+                        help='scale for svg->png',
+                        default=5)
+    parser.add_argument('--val_ratio',
+                        type=float,
+                        help='pick validation set',
+                        default=0.05)
     parser.add_argument('--seed', type=int, help='random seed', default=123)
     parser.add_argument('--cvt_color', action="store_true")
-    parser.add_argument('--thread_num', type=int, help='multiprocess number', default=32)
+    parser.add_argument('--thread_num',
+                        type=int,
+                        help='multiprocess number',
+                        default=os.cpu_count())
     args = parser.parse_args()
 
     svg_dir = f"{args.data_save_dir}/svg"
@@ -111,17 +135,17 @@ def main():
 
     random.seed(args.seed)
 
-    src = f"{args.data_save_dir}/train/train/svg_gt/*.svg"
+    src = f"{args.data_save_dir}/train-00/*.svg"
     dst = f"{svg_dir}/train"
     cmd = f"cp -r {src}  {dst}"
     os.system(cmd)
 
-    src = f"{args.data_save_dir}/val/val/svg_gt/*.svg"
+    src = f"{args.data_save_dir}/train-01/*.svg"
     dst = f"{svg_dir}/val"
     cmd = f"cp -r {src}  {dst}"
     os.system(cmd)
 
-    src = f"{args.data_save_dir}/test/test/svg_gt/*.svg"
+    src = f"{args.data_save_dir}/test-00/*.svg"
     dst = f"{svg_dir}/test"
     cmd = f"cp -r {src}  {dst}"
     os.system(cmd)
@@ -150,7 +174,10 @@ def main():
     svg_paths.extend(glob(f"{svg_dir}/test/*.svg"))
 
     print("svg > png")
-    partial_func = partial(cvt_svg2png, replace1="/svg/", replace2="/png/", scale=args.scale)
+    partial_func = partial(cvt_svg2png,
+                           replace1="/svg/",
+                           replace2="/png/",
+                           scale=args.scale)
     p = Pool(args.thread_num, init_worker)
     try:
         p.map(partial_func, svg_paths)
@@ -162,7 +189,9 @@ def main():
     p.join()
 
     print("> scale svg")
-    partial_func = partial(scaleSVG, scale=args.scale, cvt_color=args.cvt_color)
+    partial_func = partial(scaleSVG,
+                           scale=args.scale,
+                           cvt_color=args.cvt_color)
     p = Pool(args.thread_num, init_worker)
     try:
         p.map(partial_func, svg_paths)
@@ -183,6 +212,7 @@ def main():
     # for svg_path in svg_paths:
     #     print("svg_path:", svg_path)
     #     scaleSVG(svg_path, args.svg_dir, scale=args.scale)
+
 
 if __name__ == '__main__':
     main()
