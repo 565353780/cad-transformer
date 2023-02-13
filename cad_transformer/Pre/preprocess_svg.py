@@ -1,9 +1,14 @@
 '''svg -> pytorch format '''
+import sys
+
+sys.path.append("./")
+
 import os
 import math
 import shutil
 import argparse
 import numpy as np
+from copy import deepcopy
 from glob import glob
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
@@ -11,7 +16,7 @@ from svgpathtools import parse_path
 import multiprocessing as mp
 from multiprocessing import Pool
 from functools import partial
-from _utils_dataset import *
+from cad_transformer.Pre.utils_dataset import init_worker
 import torch
 
 
@@ -168,7 +173,7 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
                 instances.append([-1])
 
     segments = np.array(segments)
-    nns = get_nn(copy.deepcopy(segments), max_degree=max_degree)
+    nns = get_nn(deepcopy(segments), max_degree=max_degree)
     if segments.shape[0] < 2:
         print('Warning: too few segments')
         return
