@@ -4,13 +4,15 @@
 import os
 import torch
 import random
+import threading
 import numpy as np
+import queue as Queue
 import torchvision.transforms as T
+from PIL import Image
 from tqdm import tqdm
 from glob import glob
-from PIL import Image
 from pdb import set_trace as st
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 from cad_transformer.Config.image_net import IMAGENET_MEAN, IMAGENET_STD
 
@@ -30,6 +32,8 @@ class CADDataset(Dataset):
             self.filter_num = cfg.filter_num
             self.aug_ratio = cfg.aug_ratio
             self.rgb_dim = cfg.rgb_dim
+            # FIXME: why rgb_dim is 32?
+            self.rgb_dim = 0
         else:
             self.clus_num_per_batch = 16
             self.nn = 64
@@ -85,7 +89,7 @@ class CADDataset(Dataset):
         for idx, ann_path in tqdm(enumerate(self.anno_path_list),
                                   total=len(self.anno_path_list)):
             # FIXME: for test only
-            if idx > 100:
+            if idx > 10:
                 break
 
             adj_node_classes = np.load(ann_path, \
@@ -266,3 +270,64 @@ class CADDataset(Dataset):
         instance_center = torch.from_numpy(
             np.array(offset_list, dtype=np.float32)).cuda()
         return instance_center
+
+
+class BackgroundGenerator(threading.Thread):
+
+    def __init__(self, generator, local_rank, max_prefetch=64):
+        super(BackgroundGenerator, self).__init__()
+        self.queue = Queue.Queue(max_prefetch)
+        self.generator = generator
+        self.local_rank = local_rank
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        torch.cuda.set_device(self.local_rank)
+        for item in self.generator:
+            self.queue.put(item)
+        self.queue.put(None)
+
+    def next(self):
+        next_item = self.queue.get()
+        if next_item is None:
+            raise StopIteration
+        return next_item
+
+    def __next__(self):
+        return self.next()
+
+    def __iter__(self):
+        return self
+
+
+class CADDataLoader(DataLoader):
+
+    def __init__(self, local_rank, **kwargs):
+        super(CADDataLoader, self).__init__(**kwargs)
+        self.stream = torch.cuda.Stream(local_rank)
+        self.local_rank = local_rank
+
+    def __iter__(self):
+        self.iter = super(CADDataLoader, self).__iter__()
+        self.iter = BackgroundGenerator(self.iter, self.local_rank)
+        self.preload()
+        return self
+
+    def preload(self):
+        self.batch = next(self.iter, None)
+        if self.batch is None:
+            return None
+        with torch.cuda.stream(self.stream):
+            for k in range(len(self.batch)):
+                if isinstance(self.batch[k], torch.Tensor):
+                    self.batch[k] = self.batch[k].to(device=self.local_rank,
+                                                     non_blocking=True)
+
+    def __next__(self):
+        torch.cuda.current_stream().wait_stream(self.stream)
+        batch = self.batch
+        if batch is None:
+            raise StopIteration
+        self.preload()
+        return batch
