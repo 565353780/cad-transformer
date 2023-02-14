@@ -3,10 +3,10 @@
 
 import torch
 import torch.nn as nn
-from cad_transformer.Model.high_reso.net import get_seg_model
 from torch.nn import functional as F
 
 from cad_transformer.Config.resnet import FEAT_DIMS
+from cad_transformer.Model.hrnet import get_seg_model
 
 
 def vert_align_custom(feats,
