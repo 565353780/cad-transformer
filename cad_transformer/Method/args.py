@@ -16,15 +16,14 @@ def parse_args():
     parser.add_argument('--test_only',
                         action="store_true",
                         help='flag to do evaluation on test set')
-    parser.add_argument(
-        '--data_root',
-        type=str,
-        default="/ssd1/zhiwen/projects/CADTransformer/data/floorplan_v1")
+    parser.add_argument('--data_root',
+                        type=str,
+                        default="/home/chli/chLi/FloorPlanCAD")
     parser.add_argument('--embed_backbone', type=str, default="hrnet48")
     parser.add_argument(
         '--pretrained_model',
         type=str,
-        default="./pretrained_models/HRNet_W48_C_ssld_pretrained.pth")
+        default="/home/chli/chLi/HRNet/hrnetv2_w48_imagenet_pretrained.pth")
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--log_step",
                         type=int,
@@ -36,7 +35,7 @@ def parse_args():
                         help='image size of rasterized image')
     parser.add_argument("--max_prim",
                         type=int,
-                        default=12000,
+                        default=3000,
                         help='maximum primitive number for each batch')
     parser.add_argument("--load_ckpt",
                         type=str,
@@ -48,7 +47,7 @@ def parse_args():
                         help='continue train while loading checkpoint')
     parser.add_argument("--log_dir",
                         type=str,
-                        default='',
+                        default='train0',
                         help='logging directory')
     parser.add_argument('--seed', type=int, default=304)
     parser.add_argument('--debug', action="store_true")
