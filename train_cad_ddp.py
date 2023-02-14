@@ -1,5 +1,4 @@
 import os
-import argparse
 import torch
 from tqdm import tqdm
 from eval import do_eval, get_eval_criteria
@@ -8,68 +7,13 @@ from cad_transformer.Config.default import _C as config, update_config
 from cad_transformer.Method.logger import create_logger
 from cad_transformer.Model.cad_transformer import CADTransformer
 from cad_transformer.Dataset.cad import CADDataset, CADDataLoader
+from cad_transformer.Method.args import parse_args
 
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
 num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
 distributed = num_gpus > 1
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Train segmentation network')
-    parser.add_argument('--cfg',
-                        type=str,
-                        default="config/hrnet48.yaml",
-                        help='experiment configure file name')
-    parser.add_argument('--val_only',
-                        action="store_true",
-                        help='flag to do evaluation on val set')
-    parser.add_argument('--test_only',
-                        action="store_true",
-                        help='flag to do evaluation on test set')
-    parser.add_argument(
-        '--data_root',
-        type=str,
-        default="/ssd1/zhiwen/projects/CADTransformer/data/floorplan_v1")
-    parser.add_argument('--embed_backbone', type=str, default="hrnet48")
-    parser.add_argument(
-        '--pretrained_model',
-        type=str,
-        default="./pretrained_models/HRNet_W48_C_ssld_pretrained.pth")
-    parser.add_argument("--local_rank", type=int, default=0)
-    parser.add_argument("--log_step",
-                        type=int,
-                        default=100,
-                        help='steps for logging')
-    parser.add_argument("--img_size",
-                        type=int,
-                        default=700,
-                        help='image size of rasterized image')
-    parser.add_argument("--max_prim",
-                        type=int,
-                        default=12000,
-                        help='maximum primitive number for each batch')
-    parser.add_argument("--load_ckpt",
-                        type=str,
-                        default='',
-                        help='load checkpoint')
-    parser.add_argument("--resume_ckpt",
-                        type=str,
-                        default='',
-                        help='continue train while loading checkpoint')
-    parser.add_argument("--log_dir",
-                        type=str,
-                        default='',
-                        help='logging directory')
-    parser.add_argument('--seed', type=int, default=304)
-    parser.add_argument('--debug', action="store_true")
-    parser.add_argument('opts',
-                        help="Modify config options using the command-line",
-                        default=None,
-                        nargs=argparse.REMAINDER)
-    args = parser.parse_args()
-    return args
 
 
 def main():
