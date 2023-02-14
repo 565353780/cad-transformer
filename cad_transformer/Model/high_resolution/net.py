@@ -10,7 +10,7 @@ import torch.nn as nn
 
 from cad_transformer.Config.model import BN_MOMENTUM
 from cad_transformer.Model.layers import BasicBlock, Bottleneck
-from cad_transformer.Model.high_reso.module import HighResolutionModule
+from cad_transformer.Model.high_resolution.module import HighResolutionModule
 
 blocks_dict = {'BASIC': BasicBlock, 'BOTTLENECK': Bottleneck}
 
@@ -255,9 +255,3 @@ class HighResolutionNet(nn.Module):
             self.load_state_dict(model_dict)
         else:
             raise RuntimeError(f"> Failed load {pretrained}")
-
-
-def get_seg_model(cfg, **kwargs):
-    model = HighResolutionNet(cfg, **kwargs)
-    model.init_weights(cfg.MODEL.PRETRAINED)
-    return model
