@@ -6,6 +6,7 @@ import torch
 import random
 import numpy as np
 import torchvision.transforms as T
+from tqdm import tqdm
 from glob import glob
 from PIL import Image
 from pdb import set_trace as st
@@ -81,7 +82,12 @@ class CADDataset(Dataset):
     def filter_smallset(self):
         anno_path_list_new = []
         image_path_list_new = []
-        for idx, ann_path in enumerate(self.anno_path_list):
+        for idx, ann_path in tqdm(enumerate(self.anno_path_list),
+                                  total=len(self.anno_path_list)):
+            # FIXME: for test only
+            if idx > 100:
+                break
+
             adj_node_classes = np.load(ann_path, \
                                     allow_pickle=True).item()
             target = adj_node_classes["cat"]
