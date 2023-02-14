@@ -6,7 +6,7 @@ import torch
 import argparse
 from tqdm import tqdm
 
-from dataset import CADDataLoader, DataLoaderX
+from dataset import DataLoaderX
 from utils.utils_model import create_logger
 from models.model import CADTransformer
 from eval import do_eval, get_eval_criteria
@@ -155,7 +155,7 @@ def main():
             exit(0)
     # Set up Dataloader
     torch.multiprocessing.set_start_method('spawn', force=True)
-    val_dataset = CADDataLoader(split='val', do_norm=cfg.do_norm, cfg=cfg)
+    val_dataset = CADDataset(split='val', do_norm=cfg.do_norm, cfg=cfg)
     val_dataloader = DataLoaderX(args.local_rank,
                                  dataset=val_dataset,
                                  batch_size=cfg.test_batch_size,
@@ -168,7 +168,7 @@ def main():
             eval_F1 = do_eval(model, val_dataloader, logger, cfg)
             exit(0)
 
-    test_dataset = CADDataLoader(split='test', do_norm=cfg.do_norm, cfg=cfg)
+    test_dataset = CADDataset(split='test', do_norm=cfg.do_norm, cfg=cfg)
     test_dataloader = DataLoaderX(args.local_rank,
                                   dataset=test_dataset,
                                   batch_size=cfg.test_batch_size,
@@ -181,7 +181,7 @@ def main():
             eval_F1 = do_eval(model, test_dataloader, logger, cfg)
             exit(0)
 
-    train_dataset = CADDataLoader(split='train', do_norm=cfg.do_norm, cfg=cfg)
+    train_dataset = CADDataset(split='train', do_norm=cfg.do_norm, cfg=cfg)
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         train_dataset, shuffle=True)
     train_dataloader = DataLoaderX(args.local_rank,
