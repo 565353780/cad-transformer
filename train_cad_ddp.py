@@ -1,13 +1,13 @@
 import os
 import torch
 from tqdm import tqdm
-from eval import do_eval, get_eval_criteria
 
 from cad_transformer.Config.default import _C as config, update_config
 from cad_transformer.Method.logger import create_logger
 from cad_transformer.Model.cad_transformer import CADTransformer
 from cad_transformer.Dataset.cad import CADDataset, CADDataLoader
 from cad_transformer.Method.args import parse_args
+from cad_transformer.Method.eval import do_eval, get_eval_criteria
 
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
