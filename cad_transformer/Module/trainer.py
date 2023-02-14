@@ -161,8 +161,8 @@ class Trainer(object):
             with tqdm(train_dataloader,
                       total=len(train_dataloader),
                       smoothing=0.9) as _tqdm:
-                for i, (image, xy, target, rgb_info, nns, offset_gt, inst_gt,
-                        index, basename) in enumerate(_tqdm):
+                for i, (image, xy, target, rgb_info, nns, _, _, _,
+                        _) in enumerate(_tqdm):
                     optimizer.zero_grad()
 
                     seg_pred = model(image, xy, rgb_info, nns)
