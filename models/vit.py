@@ -1,17 +1,15 @@
-import sys, os, pdb
 import torch
 import math
 import numpy as np
 import torch.nn as nn
 from functools import partial
 import torch.nn.functional as F
-from timm.models import create_model
 from collections import OrderedDict
 from timm.models.vision_transformer import VisionTransformer, _create_vision_transformer, checkpoint_filter_fn, default_cfgs
-from timm.models.layers import PatchEmbed, DropPath, Mlp, trunc_normal_, lecun_normal_
-from timm.models.helpers import build_model_with_cfg, named_apply, adapt_input_conv
-from utils.utils_model import vit_stage_layer_mapping
-from pdb import set_trace as st
+from timm.models.layers import PatchEmbed, DropPath, Mlp, trunc_normal_
+from timm.models.helpers import build_model_with_cfg, named_apply
+
+from cad_transformer.Config.vit import vit_stage_layer_mapping
 
 
 def _init_vit_weights(m):

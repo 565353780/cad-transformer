@@ -2,36 +2,36 @@ import os
 import sys
 import torch
 import torch.nn as nn
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, BASE_DIR)
 sys.path.insert(0, os.path.join(BASE_DIR, "../", "../"))
 sys.path.insert(0, os.path.join(BASE_DIR, "../"))
 # from transformer import TransformerBlock
-from utils.utils_model import _FEAT_DIMS, AMSoftmaxLayer
+from utils.utils_model import AMSoftmaxLayer
 from seg_hrnet import get_seg_model
 from torch.nn import functional as F
-import pdb
 from config import config
 from config import update_config
-import argparse
 from utils.utils_model import *
-import pdb
 from vit import get_vit
-from timm.models.layers import Mlp
 from pdb import set_trace as st
 
+from cad_transformer.Config.resnet import _FEAT_DIMS
 
-def vert_align_custom(feats, verts, interp_mode='bilinear',
-    padding_mode='zeros', align_corners=True):
+
+def vert_align_custom(feats,
+                      verts,
+                      interp_mode='bilinear',
+                      padding_mode='zeros',
+                      align_corners=True):
     if torch.is_tensor(verts):
         if verts.dim() != 3:
             raise ValueError("verts tensor should be 3 dimensional")
         grid = verts
     else:
-        raise ValueError(
-            "verts must be a tensor or have a "
-            + "`points_padded' or`verts_padded` attribute."
-        )
+        raise ValueError("verts must be a tensor or have a " +
+                         "`points_padded' or`verts_padded` attribute.")
     grid = grid[:, None, :, :2]  # (N, 1, V, 2)
     if torch.is_tensor(feats):
         feats = [feats]
@@ -56,6 +56,7 @@ def vert_align_custom(feats, verts, interp_mode='bilinear',
 
 
 class InputEmbed(nn.Module):
+
     def __init__(self, cfg):
         super().__init__()
         print(f"> InputEmbed: {cfg.MODEL.BACKBONE}")
@@ -72,11 +73,10 @@ class InputEmbed(nn.Module):
         nn.init.normal_(self.bottleneck.weight, mean=0.0, std=0.01)
         nn.init.constant_(self.bottleneck.bias, 0)
 
-
     def forward(self, image, x):
         if self.do_clus:
             batch, clus, pts_num, xy = x.shape
-            x = x.view(batch, clus*pts_num, xy)
+            x = x.view(batch, clus * pts_num, xy)
         device, dtype = x.device, x.dtype
         img_feats = self.EmbedBackbone(image)
         factor = torch.tensor([1, 1], device=device, dtype=dtype).view(1, 1, 2)
@@ -91,6 +91,7 @@ class InputEmbed(nn.Module):
 
 
 class CADTransformer(nn.Module):
+
     def __init__(self, cfg):
         super().__init__()
         self.do_clus = cfg.do_clus
@@ -100,20 +101,22 @@ class CADTransformer(nn.Module):
         self.inter_dim = cfg.inter_dim
 
         self.input_embed = InputEmbed(cfg)
-        self.fc_bottleneck =  nn.Linear(cfg.input_embed_dim, cfg.inter_dim)
+        self.fc_bottleneck = nn.Linear(cfg.input_embed_dim, cfg.inter_dim)
         self.transformers = get_vit(pretrained=True, cfg=cfg)
 
         self.fc3 = nn.Sequential(
-            nn.Linear(self.inter_dim, self.inter_dim*2),
+            nn.Linear(self.inter_dim, self.inter_dim * 2),
             nn.ReLU(),
-            nn.Linear(self.inter_dim*2, self.inter_dim*2),
+            nn.Linear(self.inter_dim * 2, self.inter_dim * 2),
             nn.ReLU(),
         )
         if cfg.am_softmax == 1:
             print("> AMSoftmaxLayer")
-            self.last_linear = AMSoftmaxLayer(self.inter_dim*2, self.n_c, s=30)
+            self.last_linear = AMSoftmaxLayer(self.inter_dim * 2,
+                                              self.n_c,
+                                              s=30)
         else:
-            self.last_linear = nn.Linear(self.inter_dim*2, self.n_c)
+            self.last_linear = nn.Linear(self.inter_dim * 2, self.n_c)
 
     def forward(self, image, xy, _, nns):
         xy_embed = self.input_embed(image, xy)
@@ -132,6 +135,7 @@ if __name__ == "__main__":
     from config import update_config
     args = parse_args()
     cfg = update_config(config, args)
+
     def main():
 
         model = CADTransformer(cfg)
@@ -140,13 +144,16 @@ if __name__ == "__main__":
         adj_node_classes = np.load("/ssd1/zhiwen/datasets/floorplancad_v1_Dec2021/npy/train/0152-0012.npy", \
                             allow_pickle=True).item()
         target = adj_node_classes["cat"]
-        target = torch.from_numpy(np.array(target, dtype=np.long)).cuda().unsqueeze(0)
+        target = torch.from_numpy(np.array(target,
+                                           dtype=np.long)).cuda().unsqueeze(0)
 
         center = adj_node_classes["ct_norm"]
-        points = torch.from_numpy(np.array(center, dtype=np.float32)).cuda().unsqueeze(0)
+        points = torch.from_numpy(np.array(
+            center, dtype=np.float32)).cuda().unsqueeze(0)
 
         nns = adj_node_classes["nns"]
-        nns = torch.from_numpy(np.array(nns, dtype=np.long)).cuda().unsqueeze(0)
+        nns = torch.from_numpy(np.array(nns,
+                                        dtype=np.long)).cuda().unsqueeze(0)
 
         degree = None
 
@@ -155,7 +162,8 @@ if __name__ == "__main__":
         for i in range(1):
             print("\n")
             seg_pred, adj_prob, nns = model(image, points, nns)
-            adj_matrix = torch.zeros(adj_prob.shape[1], adj_prob.shape[1]).to(nns.device)
+            adj_matrix = torch.zeros(adj_prob.shape[1],
+                                     adj_prob.shape[1]).to(nns.device)
             for i in range(adj_matrix.shape[0]):
                 adj_matrix[i, nns[0, i, :]] = adj_prob[0, i, :, 0]
             adj_matrix = (adj_matrix + adj_matrix.T) / 2
