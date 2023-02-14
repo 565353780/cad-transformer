@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-_FEAT_DIMS = {
+FEAT_DIMS = {
     "resnet18": (64, 128, 256, 512),
     "resnet34": (64, 128, 256, 512),
     "resnet50": (256, 512, 1024, 2048),
