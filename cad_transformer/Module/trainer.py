@@ -15,9 +15,6 @@ from cad_transformer.Method.eval import do_eval, get_eval_criteria
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
-num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-distributed = num_gpus > 1
-
 
 class Trainer(object):
 
@@ -38,14 +35,10 @@ class Trainer(object):
 
         # Distributed Train Config
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(
-            backend="nccl",
-            init_method="env://",
-        )
-        device = torch.device('cuda:{}'.format(args.local_rank))
+        device = torch.device('cuda')
 
         # Create Model
-        model = CADTransformer(cfg)
+        model = CADTransformer(cfg).cuda()
         CE_loss = torch.nn.CrossEntropyLoss().cuda()
 
         # Create Optimizer
@@ -60,12 +53,6 @@ class Trainer(object):
                                         lr=cfg.learning_rate,
                                         momentum=0.9)
 
-        model = torch.nn.parallel.DistributedDataParallel(
-            module=model.to(device),
-            broadcast_buffers=False,
-            device_ids=[args.local_rank],
-            output_device=args.local_rank,
-            find_unused_parameters=True)
         model.train()
 
         # Load/Resume ckpt
@@ -101,6 +88,7 @@ class Trainer(object):
                 logger.info("=>Failed: no checkpoint found at '{}'".format(
                     cfg.resume_ckpt))
                 exit(0)
+
         # Set up Dataloader
         torch.multiprocessing.set_start_method('spawn', force=True)
         val_dataset = CADDataset(split='val', do_norm=cfg.do_norm, cfg=cfg)
@@ -130,12 +118,10 @@ class Trainer(object):
                 exit(0)
 
         train_dataset = CADDataset(split='train', do_norm=cfg.do_norm, cfg=cfg)
-        train_sampler = torch.utils.data.distributed.DistributedSampler(
-            train_dataset, shuffle=True)
         train_dataloader = CADDataLoader(args.local_rank,
                                          dataset=train_dataset,
-                                         sampler=train_sampler,
                                          batch_size=cfg.batch_size,
+                                         shuffle=True,
                                          num_workers=cfg.WORKERS,
                                          drop_last=True)
 
