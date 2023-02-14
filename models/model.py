@@ -1,7 +1,6 @@
 import os
 import sys
 import torch
-import torch.nn as nn
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, BASE_DIR)
@@ -11,52 +10,7 @@ sys.path.insert(0, os.path.join(BASE_DIR, "../"))
 from config import config
 from config import update_config
 from utils.utils_model import *
-from vit import get_vit
 from pdb import set_trace as st
-
-from cad_transformer.Model.layers import AMSoftmaxLayer
-from cad_transformer.Model.input_embed import InputEmbed
-
-
-class CADTransformer(nn.Module):
-
-    def __init__(self, cfg):
-        super().__init__()
-        self.do_clus = cfg.do_clus
-        self.clus_nn = cfg.clus_nn
-        self.model_nn = cfg.model.model_nn
-        self.n_c = cfg.num_class + 1
-        self.inter_dim = cfg.inter_dim
-
-        self.input_embed = InputEmbed(cfg)
-        self.fc_bottleneck = nn.Linear(cfg.input_embed_dim, cfg.inter_dim)
-        self.transformers = get_vit(pretrained=True, cfg=cfg)
-
-        self.fc3 = nn.Sequential(
-            nn.Linear(self.inter_dim, self.inter_dim * 2),
-            nn.ReLU(),
-            nn.Linear(self.inter_dim * 2, self.inter_dim * 2),
-            nn.ReLU(),
-        )
-        if cfg.am_softmax == 1:
-            print("> AMSoftmaxLayer")
-            self.last_linear = AMSoftmaxLayer(self.inter_dim * 2,
-                                              self.n_c,
-                                              s=30)
-        else:
-            self.last_linear = nn.Linear(self.inter_dim * 2, self.n_c)
-
-    def forward(self, image, xy, _, nns):
-        xy_embed = self.input_embed(image, xy)
-        xy_embed = self.fc_bottleneck(xy_embed)
-
-        xy_embed_list = self.transformers([xy, xy_embed, nns])
-        xy_embed, attns = xy_embed_list
-
-        res = self.fc3(xy_embed)
-        res = self.last_linear(res)
-        return res
-
 
 if __name__ == "__main__":
     from train_cad_ddp import parse_args

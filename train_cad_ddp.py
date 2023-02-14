@@ -3,11 +3,11 @@ import argparse
 import torch
 from tqdm import tqdm
 from dataset import CADDataLoader, DataLoaderX
-from models.model import CADTransformer
 from eval import do_eval, get_eval_criteria
 
 from cad_transformer.Config.default import _C as config, update_config
 from cad_transformer.Method.logger import create_logger
+from cad_transformer.Model.cad_transformer import CADTransformer
 
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
