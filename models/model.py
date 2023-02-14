@@ -8,7 +8,6 @@ sys.path.insert(0, BASE_DIR)
 sys.path.insert(0, os.path.join(BASE_DIR, "../", "../"))
 sys.path.insert(0, os.path.join(BASE_DIR, "../"))
 # from transformer import TransformerBlock
-from utils.utils_model import AMSoftmaxLayer
 from seg_hrnet import get_seg_model
 from torch.nn import functional as F
 from config import config
@@ -18,6 +17,7 @@ from vit import get_vit
 from pdb import set_trace as st
 
 from cad_transformer.Config.resnet import _FEAT_DIMS
+from cad_transformer.Model.layers import AMSoftmaxLayer
 
 
 def vert_align_custom(feats,
