@@ -4,20 +4,19 @@ import sys
 sys.path.append("./")
 
 import os
-import math
+import torch
 import shutil
 import argparse
 import numpy as np
-from copy import deepcopy
-from glob import glob
 import xml.etree.ElementTree as ET
+from glob import glob
+from copy import deepcopy
 from bs4 import BeautifulSoup
-from svgpathtools import parse_path
-import multiprocessing as mp
-from multiprocessing import Pool
 from functools import partial
+from multiprocessing import Pool
+from svgpathtools import parse_path
+
 from cad_transformer.Pre.utils_dataset import init_worker
-import torch
 
 
 def parse_args():
