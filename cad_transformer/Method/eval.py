@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 import torch
 from tqdm import tqdm
@@ -11,6 +14,19 @@ num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
 distributed = num_gpus > 1
 
 
+def get_eval_criteria(epoch):
+    eval = False
+    if epoch < 50:
+        if epoch % 5 == 0:
+            eval = True
+    if 50 < epoch < 1e5:
+        if epoch % 5 == 0:
+            eval = True
+    if epoch == 0 or epoch == 1:
+        eval = True
+    return eval
+
+
 def do_eval(model, loaders, logger, cfg):
     logger.info(f'> Conducting do_eval')
     with torch.no_grad():
@@ -18,11 +34,9 @@ def do_eval(model, loaders, logger, cfg):
         anno_list = anno_config.AnnoList().anno_list_all_reverse
         class_num = len(anno_list)
         cnt_prd, cnt_gt, cnt_tp = \
-            [torch.Tensor([0 for x in range(0, class_num+1)]).cuda() for _ in range(3)]
-        valid_list = []
+            [torch.Tensor([0 for _ in range(0, class_num+1)]).cuda() for _ in range(3)]
         with tqdm(loaders, total=len(loaders), smoothing=0.9) as _tqdm:
-            for i, (image, xy, target, rgb_info, nns, offset_gt, inst_gt,
-                    index, basename) in enumerate(_tqdm):
+            for image, xy, target, rgb_info, nns, _, _, index, _ in _tqdm:
                 seg_pred = model(image, xy, rgb_info, nns)
                 seg_pred = seg_pred.contiguous().view(-1, cfg.num_class + 1)
                 index = index.contiguous().view(-1).cpu().numpy()
@@ -58,16 +72,3 @@ def do_eval(model, loaders, logger, cfg):
             logger.info(
                 f'Total FG Precision:{precision}, Recall:{recall}, F1:{f1}')
     return f1
-
-
-def get_eval_criteria(epoch):
-    eval = False
-    if epoch < 50:
-        if epoch % 5 == 0:
-            eval = True
-    if 50 < epoch < 1e5:
-        if epoch % 5 == 0:
-            eval = True
-    if epoch == 0 or epoch == 1:
-        eval = True
-    return eval
