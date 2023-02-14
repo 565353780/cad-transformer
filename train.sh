@@ -3,5 +3,5 @@ CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch \
   --data_root /home/chli/chLi/FloorPlanCAD \
   --pretrained_model /home/chli/chLi/HRNet/hrnetv2_w48_imagenet_pretrained.pth \
   --log_dir train0 \
-  --max_prim 6000
+  --max_prim 3000
 
