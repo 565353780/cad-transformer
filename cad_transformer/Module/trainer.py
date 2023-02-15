@@ -4,8 +4,8 @@
 import os
 
 import torch
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
@@ -13,7 +13,7 @@ from cad_transformer.Dataset.cad import CADDataLoader, CADDataset
 from cad_transformer.Method.args import parse_args
 from cad_transformer.Method.eval import do_eval, get_eval_criteria
 from cad_transformer.Method.logger import create_logger
-from cad_transformer.Method.path import createFileFolder
+from cad_transformer.Method.path import createFileFolder, removeFile, renameFile
 from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Model.cad_transformer import CADTransformer
 
@@ -34,7 +34,7 @@ class Trainer(object):
         self.cfg = update_config(config, self.args)
 
         self.model = CADTransformer(self.cfg).cuda()
-        self.CE_loss = torch.nn.CrossEntropyLoss().cuda()
+
         val_dataset = CADDataset(split='val',
                                  do_norm=self.cfg.do_norm,
                                  cfg=self.cfg,
@@ -68,13 +68,10 @@ class Trainer(object):
                                               num_workers=self.cfg.WORKERS,
                                               drop_last=True)
 
-        self.start_epoch = 0
-        self.eval_F1 = 0
-        self.best_F1 = 0
-        self.best_epoch = 0
-        self.global_epoch = 0
-
         self.step = 0
+        self.best_F1 = 0
+        self.eval_F1 = 0
+
         self.log_folder_name = getCurrentTime()
 
         self.optimizer = torch.optim.Adam(self.model.parameters(),
@@ -82,6 +79,7 @@ class Trainer(object):
                                           betas=(0.9, 0.999),
                                           eps=1e-08,
                                           weight_decay=self.cfg.weight_decay)
+        self.CE_loss = torch.nn.CrossEntropyLoss().cuda()
 
         self.logger = None
         self.summary_writer = None
@@ -106,23 +104,47 @@ class Trainer(object):
 
     def loadModel(self, model_file_path):
         if not os.path.exists(model_file_path):
-            print("[ERROR][Trainer::loadModel]")
-            print("\t model_file not exist!")
-            print("\t", model_file_path)
-            return False
+            print("[WARN][Trainer::loadModel]")
+            print("\t model_file not exist! start training from step 0...")
+            return True
 
         model_dict = torch.load(model_file_path)
         #  map_location=torch.device("cpu"))
 
-        self.start_epoch = model_dict['epoch']
-        self.model.load_state_dict(model_dict['model_state_dict'])
-        self.optimizer.load_state_dict(model_dict['optimizer_state_dict'])
-        epoch = model_dict['epoch']
-        print(f'=> resume checkpoint: {model_file_path} (epoch: {epoch})')
+        self.model.load_state_dict(model_dict['model'])
+        self.optimizer.load_state_dict(model_dict['optimizer'])
+        self.step = model_dict['step']
+        self.best_F1 = model_dict['best_F1']
+        self.log_folder_name = model_dict['log_folder_name']
+
         for state in self.optimizer.state.values():
             for k, v in state.items():
                 if torch.is_tensor(v):
                     state[k] = v.cuda()
+
+        print("[INFO][Trainer::loadModel]")
+        print("\t load model success! start training from step " +
+              str(self.step) + "...")
+        return True
+
+    def saveModel(self, save_model_file_path):
+        model_dict = {
+            'model': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'step': self.step,
+            'best_F1': self.best_F1,
+            'log_folder_name': self.log_folder_name,
+        }
+
+        createFileFolder(save_model_file_path)
+
+        tmp_save_model_file_path = save_model_file_path.split(
+            ".pth")[0] + "_tmp.pth"
+
+        torch.save(model_dict, tmp_save_model_file_path)
+
+        removeFile(save_model_file_path)
+        renameFile(tmp_save_model_file_path, save_model_file_path)
         return True
 
     def updateLearningRate(self, epoch):
@@ -157,29 +179,33 @@ class Trainer(object):
         seg_pred = seg_pred.contiguous().view(-1, cfg.num_class + 1)
         target = target.view(-1, 1)[:, 0]
 
-        loss_seg = self.CE_loss(seg_pred, target)
-        loss = loss_seg
+        loss = self.CE_loss(seg_pred, target)
         loss.backward()
         self.optimizer.step()
-        return loss_seg, loss
 
-    def saveModel(self, epoch, model_file_path):
-        createFileFolder(model_file_path)
-
-        state = {
-            'epoch': epoch,
-            'best_F1': self.best_F1,
-            'best_epoch': self.best_epoch,
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-        }
-        torch.save(state, model_file_path)
+        self.summary_writer.add_scalar("Loss/loss", round(loss.item(), 5),
+                                       self.step)
         return True
 
-    def eval(self):
+    def eval(self, epoch):
+        if not get_eval_criteria(epoch):
+            return True
+
+        print("[INFO][Trainer::eval]")
+        print("\t start eval at epoch " + str(epoch) + "...")
+        self.eval_F1 = do_eval(self.model, self.val_dataloader, self.logger,
+                               self.cfg)
+
+        if self.eval_F1 <= self.best_F1:
+            return True
+
+        self.best_F1 = self.eval_F1
+
+        save_path = './output/' + self.log_folder_name + '/model_best.pth'
+        self.saveModel(save_path)
         return True
 
-    def train(self):
+    def train(self, print_progress=False):
         self.model.train()
 
         #  torch.multiprocessing.set_start_method('spawn', force=True)
@@ -189,57 +215,30 @@ class Trainer(object):
                                    self.logger, self.cfg)
             exit(0)
 
-        # Test Only
         if self.cfg.test_only:
             self.eval_F1 = do_eval(self.model, self.test_dataloader,
                                    self.logger, self.cfg)
             exit(0)
 
-        print("> start epoch", self.start_epoch)
-        for epoch in range(self.start_epoch, self.cfg.epoch):
-            print(f"=> {self.cfg.log_dir}\n\n")
-            print(
-                f'Epoch {self.global_epoch + 1} ({epoch + 1}/{self.cfg.epoch})'
-            )
+        for epoch in range(self.cfg.epoch):
+            print(f'Epoch {epoch + 1} ({epoch + 1}/{self.cfg.epoch})')
 
             self.updateLearningRate(epoch)
             self.updateMomentum(epoch)
 
             self.model = self.model.train()
 
-            # training loops
-            with tqdm(self.train_dataloader,
-                      total=len(self.train_dataloader),
-                      smoothing=0.9) as _tqdm:
-                for i, data in enumerate(_tqdm):
-                    loss_seg, loss = self.trainStep(data)
-                    _tqdm.set_postfix(loss=loss.item(), l_seg=loss_seg.item())
+            for_data = self.train_dataloader
+            if print_progress:
+                print("[INFO][Trainer::train]")
+                print("\t start train at epoch " + str(epoch) + "...")
+                for_data = tqdm(for_data, total=len(for_data), smoothing=0.9)
+            for data in for_data:
+                self.trainStep(data)
+                self.step += 1
 
-                    if i % self.args.log_step == 0:
-                        print(
-                            f'Train loss: {round(loss.item(), 5)}, loss seg: {round(loss_seg.item(), 5)})'
-                        )
+            save_path = './output/' + self.log_folder_name + '/model_last.pth'
+            self.saveModel(save_path)
 
-            print('Save last model...')
-            savepath = os.path.join(self.cfg.log_dir, 'last_model.pth')
-            self.saveModel(epoch, savepath)
-
-            # assert validation?
-            if get_eval_criteria(epoch):
-                print('> do validation')
-                self.eval_F1 = do_eval(self.model, self.val_dataloader,
-                                       self.logger, self.cfg)
-
-            # Save ckpt
-            if self.eval_F1 > self.best_F1:
-                self.best_F1 = self.eval_F1
-                self.best_epoch = epoch
-
-                print(
-                    f'Save model... Best F1:{self.best_F1}, Best Epoch:{self.best_epoch}'
-                )
-                savepath = os.path.join(self.cfg.log_dir, 'best_model.pth')
-                self.saveModel(epoch, savepath)
-
-            self.global_epoch += 1
+            self.eval(epoch)
         return True
