@@ -2,221 +2,244 @@
 # -*- coding: utf-8 -*-
 
 import os
+
 import torch
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from cad_transformer.Config.default import _C as config, update_config
-from cad_transformer.Method.logger import create_logger
-from cad_transformer.Model.cad_transformer import CADTransformer
-from cad_transformer.Dataset.cad import CADDataset, CADDataLoader
+from cad_transformer.Config.default import _C as config
+from cad_transformer.Config.default import update_config
+from cad_transformer.Dataset.cad import CADDataLoader, CADDataset
 from cad_transformer.Method.args import parse_args
 from cad_transformer.Method.eval import do_eval, get_eval_criteria
+from cad_transformer.Method.logger import create_logger
+from cad_transformer.Method.path import createFileFolder
+from cad_transformer.Method.time import getCurrentTime
+from cad_transformer.Model.cad_transformer import CADTransformer
 
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
 
+def bn_momentum_adjust(m, momentum):
+    if isinstance(m, torch.nn.BatchNorm2d) or isinstance(
+            m, torch.nn.BatchNorm1d):
+        m.momentum = momentum
+
+
 class Trainer(object):
 
     def __init__(self):
+        self.args = parse_args()
+        self.cfg = update_config(config, self.args)
+
+        self.model = CADTransformer(self.cfg).cuda()
+        self.CE_loss = torch.nn.CrossEntropyLoss().cuda()
+        val_dataset = CADDataset(split='val',
+                                 do_norm=self.cfg.do_norm,
+                                 cfg=self.cfg,
+                                 max_prim=self.cfg.max_prim)
+        self.val_dataloader = CADDataLoader(
+            0,
+            dataset=val_dataset,
+            batch_size=self.cfg.test_batch_size,
+            shuffle=False,
+            num_workers=self.cfg.WORKERS,
+            drop_last=False)
+        test_dataset = CADDataset(split='test',
+                                  do_norm=self.cfg.do_norm,
+                                  cfg=self.cfg,
+                                  max_prim=self.cfg.max_prim)
+        self.test_dataloader = CADDataLoader(
+            0,
+            dataset=test_dataset,
+            batch_size=self.cfg.test_batch_size,
+            shuffle=False,
+            num_workers=self.cfg.WORKERS,
+            drop_last=False)
+        train_dataset = CADDataset(split='train',
+                                   do_norm=self.cfg.do_norm,
+                                   cfg=self.cfg,
+                                   max_prim=self.cfg.max_prim)
+        self.train_dataloader = CADDataLoader(0,
+                                              dataset=train_dataset,
+                                              batch_size=self.cfg.batch_size,
+                                              shuffle=True,
+                                              num_workers=self.cfg.WORKERS,
+                                              drop_last=True)
+
+        self.start_epoch = 0
+        self.eval_F1 = 0
+        self.best_F1 = 0
+        self.best_epoch = 0
+        self.global_epoch = 0
+
+        self.step = 0
+        self.log_folder_name = getCurrentTime()
+
+        self.optimizer = torch.optim.Adam(self.model.parameters(),
+                                          lr=self.cfg.learning_rate,
+                                          betas=(0.9, 0.999),
+                                          eps=1e-08,
+                                          weight_decay=self.cfg.weight_decay)
+
+        self.logger = None
+        self.summary_writer = None
+
+        self.initLogger()
         return
 
+    def initLogger(self):
+        os.makedirs(self.cfg.log_dir, exist_ok=True)
+        if self.cfg.eval_only:
+            self.logger = create_logger(self.cfg.log_dir, 'val')
+        elif self.cfg.test_only:
+            self.logger = create_logger(self.cfg.log_dir, 'test')
+        else:
+            self.logger = create_logger(self.cfg.log_dir, 'train')
+        return True
+
+    def loadSummaryWriter(self):
+        self.summary_writer = SummaryWriter("./logs/" + self.log_folder_name +
+                                            "/")
+        return True
+
+    def loadModel(self, model_file_path):
+        if not os.path.exists(model_file_path):
+            print("[ERROR][Trainer::loadModel]")
+            print("\t model_file not exist!")
+            print("\t", model_file_path)
+            return False
+
+        model_dict = torch.load(model_file_path)
+        #  map_location=torch.device("cpu"))
+
+        self.start_epoch = model_dict['epoch']
+        self.model.load_state_dict(model_dict['model_state_dict'])
+        self.optimizer.load_state_dict(model_dict['optimizer_state_dict'])
+        epoch = model_dict['epoch']
+        print(f'=> resume checkpoint: {model_file_path} (epoch: {epoch})')
+        for state in self.optimizer.state.values():
+            for k, v in state.items():
+                if torch.is_tensor(v):
+                    state[k] = v.cuda()
+        return True
+
+    def updateLearningRate(self, epoch):
+        lr = max(
+            self.cfg.learning_rate *
+            (self.cfg.lr_decay**(epoch // self.cfg.step_size)),
+            self.cfg.LEARNING_RATE_CLIP)
+        if epoch <= self.cfg.epoch_warmup:
+            lr = self.cfg.learning_rate_warmup
+
+        print(f'Learning rate: {lr}')
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
+        return True
+
+    def updateMomentum(self, epoch):
+        momentum = self.cfg.MOMENTUM_ORIGINAL * (self.cfg.MOMENTUM_DECCAY**
+                                                 (epoch // self.cfg.step_size))
+        if momentum < 0.01:
+            momentum = 0.01
+        print(f'BN momentum updated to: {momentum}')
+        self.model = self.model.apply(
+            lambda x: bn_momentum_adjust(x, momentum))
+        return True
+
+    def trainStep(self, data):
+        image, xy, target, rgb_info, nns, _, _, _, _ = data
+
+        self.optimizer.zero_grad()
+
+        seg_pred = self.model(image, xy, rgb_info, nns)
+        seg_pred = seg_pred.contiguous().view(-1, cfg.num_class + 1)
+        target = target.view(-1, 1)[:, 0]
+
+        loss_seg = self.CE_loss(seg_pred, target)
+        loss = loss_seg
+        loss.backward()
+        self.optimizer.step()
+        return loss_seg, loss
+
+    def saveModel(self, epoch, model_file_path):
+        createFileFolder(model_file_path)
+
+        state = {
+            'epoch': epoch,
+            'best_F1': self.best_F1,
+            'best_epoch': self.best_epoch,
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+        }
+        torch.save(state, model_file_path)
+        return True
+
+    def eval(self):
+        return True
+
     def train(self):
-        args = parse_args()
-        cfg = update_config(config, args)
+        self.model.train()
 
-        os.makedirs(cfg.log_dir, exist_ok=True)
-        if cfg.eval_only:
-            logger = create_logger(cfg.log_dir, 'val')
-        elif cfg.test_only:
-            logger = create_logger(cfg.log_dir, 'test')
-        else:
-            logger = create_logger(cfg.log_dir, 'train')
+        #  torch.multiprocessing.set_start_method('spawn', force=True)
 
-        # Distributed Train Config
-        torch.cuda.set_device(args.local_rank)
-        device = torch.device('cuda')
+        if self.cfg.eval_only:
+            self.eval_F1 = do_eval(self.model, self.val_dataloader,
+                                   self.logger, self.cfg)
+            exit(0)
 
-        # Create Model
-        model = CADTransformer(cfg).cuda()
-        CE_loss = torch.nn.CrossEntropyLoss().cuda()
-
-        # Create Optimizer
-        if cfg.optimizer == 'Adam':
-            optimizer = torch.optim.Adam(model.parameters(),
-                                         lr=cfg.learning_rate,
-                                         betas=(0.9, 0.999),
-                                         eps=1e-08,
-                                         weight_decay=cfg.weight_decay)
-        else:
-            optimizer = torch.optim.SGD(model.parameters(),
-                                        lr=cfg.learning_rate,
-                                        momentum=0.9)
-
-        model.train()
-
-        # Load/Resume ckpt
-        start_epoch = 0
-        if cfg.load_ckpt != '':
-            if os.path.exists(cfg.load_ckpt):
-                checkpoint = torch.load(cfg.load_ckpt,
-                                        map_location=torch.device("cpu"))
-                model.load_state_dict(checkpoint['model_state_dict'])
-                logger.info("=> loaded checkpoint '{}' (epoch {})".format(
-                    cfg.load_ckpt, checkpoint['epoch']))
-            else:
-                logger.info("=>Failed: no checkpoint found at '{}'".format(
-                    cfg.load_ckpt))
-                exit(0)
-
-        if cfg.resume_ckpt != '':
-            if os.path.exists(cfg.load_ckpt):
-                checkpoint = torch.load(cfg.resume_ckpt,
-                                        map_location=torch.device("cpu"))
-                start_epoch = checkpoint['epoch']
-                model.load_state_dict(checkpoint['model_state_dict'])
-                epoch = checkpoint['epoch']
-                logger.info(
-                    f'=> resume checkpoint: {cfg.resume_ckpt} (epoch: {epoch})'
-                )
-                optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-                for state in optimizer.state.values():
-                    for k, v in state.items():
-                        if torch.is_tensor(v):
-                            state[k] = v.to(device)
-            else:
-                logger.info("=>Failed: no checkpoint found at '{}'".format(
-                    cfg.resume_ckpt))
-                exit(0)
-
-        # Set up Dataloader
-        torch.multiprocessing.set_start_method('spawn', force=True)
-        val_dataset = CADDataset(split='val', do_norm=cfg.do_norm, cfg=cfg)
-        val_dataloader = CADDataLoader(args.local_rank,
-                                       dataset=val_dataset,
-                                       batch_size=cfg.test_batch_size,
-                                       shuffle=False,
-                                       num_workers=cfg.WORKERS,
-                                       drop_last=False)
-        # Eval Only
-        if args.local_rank == 0:
-            if cfg.eval_only:
-                eval_F1 = do_eval(model, val_dataloader, logger, cfg)
-                exit(0)
-
-        test_dataset = CADDataset(split='test', do_norm=cfg.do_norm, cfg=cfg)
-        test_dataloader = CADDataLoader(args.local_rank,
-                                        dataset=test_dataset,
-                                        batch_size=cfg.test_batch_size,
-                                        shuffle=False,
-                                        num_workers=cfg.WORKERS,
-                                        drop_last=False)
         # Test Only
-        if args.local_rank == 0:
-            if cfg.test_only:
-                eval_F1 = do_eval(model, test_dataloader, logger, cfg)
-                exit(0)
+        if self.cfg.test_only:
+            self.eval_F1 = do_eval(self.model, self.test_dataloader,
+                                   self.logger, self.cfg)
+            exit(0)
 
-        train_dataset = CADDataset(split='train', do_norm=cfg.do_norm, cfg=cfg)
-        train_dataloader = CADDataLoader(args.local_rank,
-                                         dataset=train_dataset,
-                                         batch_size=cfg.batch_size,
-                                         shuffle=True,
-                                         num_workers=cfg.WORKERS,
-                                         drop_last=True)
+        print("> start epoch", self.start_epoch)
+        for epoch in range(self.start_epoch, self.cfg.epoch):
+            print(f"=> {self.cfg.log_dir}\n\n")
+            print(
+                f'Epoch {self.global_epoch + 1} ({epoch + 1}/{self.cfg.epoch})'
+            )
 
-        def bn_momentum_adjust(m, momentum):
-            if isinstance(m, torch.nn.BatchNorm2d) or isinstance(
-                    m, torch.nn.BatchNorm1d):
-                m.momentum = momentum
+            self.updateLearningRate(epoch)
+            self.updateMomentum(epoch)
 
-        best_F1, eval_F1 = 0, 0
-        best_epoch = 0
-        global_epoch = 0
-
-        print("> start epoch", start_epoch)
-        for epoch in range(start_epoch, cfg.epoch):
-            logger.info(f"=> {cfg.log_dir}")
-
-            logger.info("\n\n")
-            logger.info(f'Epoch {global_epoch + 1} ({epoch + 1}/{cfg.epoch})')
-            lr = max(
-                cfg.learning_rate * (cfg.lr_decay**(epoch // cfg.step_size)),
-                cfg.LEARNING_RATE_CLIP)
-            if epoch <= cfg.epoch_warmup:
-                lr = cfg.learning_rate_warmup
-
-            logger.info(f'Learning rate: {lr}')
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = lr
-            momentum = cfg.MOMENTUM_ORIGINAL * (cfg.MOMENTUM_DECCAY
-                                                **(epoch // cfg.step_size))
-            if momentum < 0.01:
-                momentum = 0.01
-            logger.info(f'BN momentum updated to: {momentum}')
-            model = model.apply(lambda x: bn_momentum_adjust(x, momentum))
-            model = model.train()
+            self.model = self.model.train()
 
             # training loops
-            with tqdm(train_dataloader,
-                      total=len(train_dataloader),
+            with tqdm(self.train_dataloader,
+                      total=len(self.train_dataloader),
                       smoothing=0.9) as _tqdm:
-                for i, (image, xy, target, rgb_info, nns, _, _, _,
-                        _) in enumerate(_tqdm):
-                    optimizer.zero_grad()
-
-                    seg_pred = model(image, xy, rgb_info, nns)
-                    seg_pred = seg_pred.contiguous().view(
-                        -1, cfg.num_class + 1)
-                    target = target.view(-1, 1)[:, 0]
-
-                    loss_seg = CE_loss(seg_pred, target)
-                    loss = loss_seg
-                    loss.backward()
-                    optimizer.step()
+                for i, data in enumerate(_tqdm):
+                    loss_seg, loss = self.trainStep(data)
                     _tqdm.set_postfix(loss=loss.item(), l_seg=loss_seg.item())
 
-                    if i % args.log_step == 0 and args.local_rank == 0:
-                        logger.info(
+                    if i % self.args.log_step == 0:
+                        print(
                             f'Train loss: {round(loss.item(), 5)}, loss seg: {round(loss_seg.item(), 5)})'
                         )
 
-            # Save last
-            if args.local_rank == 0:
-                logger.info('Save last model...')
-                savepath = os.path.join(cfg.log_dir, 'last_model.pth')
-                state = {
-                    'epoch': epoch,
-                    'best_F1': best_F1,
-                    'best_epoch': best_epoch,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                }
-                torch.save(state, savepath)
+            print('Save last model...')
+            savepath = os.path.join(self.cfg.log_dir, 'last_model.pth')
+            self.saveModel(epoch, savepath)
+
             # assert validation?
-            eval = get_eval_criteria(epoch)
+            if get_eval_criteria(epoch):
+                print('> do validation')
+                self.eval_F1 = do_eval(self.model, self.val_dataloader,
+                                       self.logger, self.cfg)
 
-            if args.local_rank == 0:
-                if eval:
-                    logger.info('> do validation')
-                    eval_F1 = do_eval(model, val_dataloader, logger, cfg)
             # Save ckpt
-            if args.local_rank == 0:
-                if eval_F1 > best_F1:
-                    best_F1 = eval_F1
-                    best_epoch = epoch
-                    logger.info(
-                        f'Save model... Best F1:{best_F1}, Best Epoch:{best_epoch}'
-                    )
-                    savepath = os.path.join(cfg.log_dir, 'best_model.pth')
-                    state = {
-                        'epoch': epoch,
-                        'best_F1': best_F1,
-                        'best_epoch': best_epoch,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                    }
-                    torch.save(state, savepath)
+            if self.eval_F1 > self.best_F1:
+                self.best_F1 = self.eval_F1
+                self.best_epoch = epoch
 
-            global_epoch += 1
+                print(
+                    f'Save model... Best F1:{self.best_F1}, Best Epoch:{self.best_epoch}'
+                )
+                savepath = os.path.join(self.cfg.log_dir, 'best_model.pth')
+                self.saveModel(epoch, savepath)
+
+            self.global_epoch += 1
         return True
