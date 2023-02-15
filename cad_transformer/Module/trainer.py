@@ -70,7 +70,6 @@ class Trainer(object):
 
         self.step = 0
         self.best_F1 = 0
-        self.eval_F1 = 0
 
         self.log_folder_name = getCurrentTime()
 
@@ -195,13 +194,13 @@ class Trainer(object):
 
         print("[INFO][Trainer::eval]")
         print("\t start eval at epoch " + str(epoch) + "...")
-        self.eval_F1 = do_eval(self.model, self.val_dataloader, self.logger,
-                               self.cfg)
+        eval_F1 = do_eval(self.model, self.val_dataloader, self.logger,
+                          self.cfg)
 
-        if self.eval_F1 <= self.best_F1:
+        if eval_F1 <= self.best_F1:
             return True
 
-        self.best_F1 = self.eval_F1
+        self.best_F1 = eval_F1
 
         save_path = './output/' + self.log_folder_name + '/model_best.pth'
         self.saveModel(save_path)
@@ -213,13 +212,11 @@ class Trainer(object):
         #  torch.multiprocessing.set_start_method('spawn', force=True)
 
         if self.cfg.eval_only:
-            self.eval_F1 = do_eval(self.model, self.val_dataloader,
-                                   self.logger, self.cfg)
+            do_eval(self.model, self.val_dataloader, self.logger, self.cfg)
             exit(0)
 
         if self.cfg.test_only:
-            self.eval_F1 = do_eval(self.model, self.test_dataloader,
-                                   self.logger, self.cfg)
+            do_eval(self.model, self.test_dataloader, self.logger, self.cfg)
             exit(0)
 
         for epoch in range(self.cfg.epoch):
