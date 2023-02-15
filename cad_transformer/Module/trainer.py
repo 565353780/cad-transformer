@@ -155,9 +155,10 @@ class Trainer(object):
         if epoch <= self.cfg.epoch_warmup:
             lr = self.cfg.learning_rate_warmup
 
-        print(f'Learning rate: {lr}')
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = lr
+
+        self.summary_writer.add_scalar("Train/lr", lr, self.step)
         return True
 
     def updateMomentum(self, epoch):
@@ -165,9 +166,10 @@ class Trainer(object):
                                                  (epoch // self.cfg.step_size))
         if momentum < 0.01:
             momentum = 0.01
-        print(f'BN momentum updated to: {momentum}')
         self.model = self.model.apply(
             lambda x: bn_momentum_adjust(x, momentum))
+
+        self.summary_writer.add_scalar("Train/momentum", momentum, self.step)
         return True
 
     def trainStep(self, data):
@@ -176,7 +178,7 @@ class Trainer(object):
         self.optimizer.zero_grad()
 
         seg_pred = self.model(image, xy, rgb_info, nns)
-        seg_pred = seg_pred.contiguous().view(-1, cfg.num_class + 1)
+        seg_pred = seg_pred.contiguous().view(-1, self.cfg.num_class + 1)
         target = target.view(-1, 1)[:, 0]
 
         loss = self.CE_loss(seg_pred, target)
