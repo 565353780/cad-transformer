@@ -12,7 +12,6 @@ from cad_transformer.Config.default import update_config
 from cad_transformer.Dataset.cad import CADDataLoader, CADDataset
 from cad_transformer.Method.args import parse_args
 from cad_transformer.Method.eval import do_eval, get_eval_criteria
-from cad_transformer.Method.logger import create_logger
 from cad_transformer.Method.path import createFileFolder, removeFile, renameFile
 from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Model.cad_transformer import CADTransformer
@@ -68,11 +67,6 @@ class Trainer(object):
                                               num_workers=self.cfg.WORKERS,
                                               drop_last=True)
 
-        self.step = 0
-        self.best_F1 = 0
-
-        self.log_folder_name = getCurrentTime()
-
         self.optimizer = torch.optim.Adam(self.model.parameters(),
                                           lr=self.cfg.learning_rate,
                                           betas=(0.9, 0.999),
@@ -80,21 +74,12 @@ class Trainer(object):
                                           weight_decay=self.cfg.weight_decay)
         self.CE_loss = torch.nn.CrossEntropyLoss().cuda()
 
-        self.logger = None
+        self.step = 0
+        self.best_F1 = 0
+        self.log_folder_name = getCurrentTime()
+
         self.summary_writer = None
-
-        self.initLogger()
         return
-
-    def initLogger(self):
-        os.makedirs(self.cfg.log_dir, exist_ok=True)
-        if self.cfg.eval_only:
-            self.logger = create_logger(self.cfg.log_dir, 'val')
-        elif self.cfg.test_only:
-            self.logger = create_logger(self.cfg.log_dir, 'test')
-        else:
-            self.logger = create_logger(self.cfg.log_dir, 'train')
-        return True
 
     def loadSummaryWriter(self):
         self.summary_writer = SummaryWriter("./logs/" + self.log_folder_name +
@@ -103,6 +88,7 @@ class Trainer(object):
 
     def loadModel(self, model_file_path):
         if not os.path.exists(model_file_path):
+            self.loadSummaryWriter()
             print("[WARN][Trainer::loadModel]")
             print("\t model_file not exist! start training from step 0...")
             return True
@@ -194,8 +180,8 @@ class Trainer(object):
 
         print("[INFO][Trainer::eval]")
         print("\t start eval at epoch " + str(epoch) + "...")
-        eval_F1 = do_eval(self.model, self.val_dataloader, self.logger,
-                          self.cfg)
+        eval_F1 = do_eval(self.model, self.val_dataloader, self.summary_writer,
+                          self.cfg, self.step)
 
         if eval_F1 <= self.best_F1:
             return True
@@ -212,11 +198,13 @@ class Trainer(object):
         #  torch.multiprocessing.set_start_method('spawn', force=True)
 
         if self.cfg.eval_only:
-            do_eval(self.model, self.val_dataloader, self.logger, self.cfg)
+            do_eval(self.model, self.val_dataloader, self.summary_writer,
+                    self.cfg)
             exit(0)
 
         if self.cfg.test_only:
-            do_eval(self.model, self.test_dataloader, self.logger, self.cfg)
+            do_eval(self.model, self.test_dataloader, self.summary_writer,
+                    self.cfg)
             exit(0)
 
         for epoch in range(self.cfg.epoch):
