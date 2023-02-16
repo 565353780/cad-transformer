@@ -24,7 +24,6 @@ class CADDataset(Dataset):
         self.root = cfg.root
         self.split = split
         self.max_prim = max_prim
-        self.debug = cfg.debug
         if cfg is not None:
             self.clus_num_per_batch = cfg.clus_num_per_batch
             self.nn = cfg.clus_nn
@@ -62,23 +61,11 @@ class CADDataset(Dataset):
             self.aug_training()
             print(f" > after aug training: {len(self.anno_path_list)}")
 
-        if not self.debug:
-            assert len(self.image_path_list) == len(self.anno_path_list)
+        assert len(self.image_path_list) == len(self.anno_path_list)
         self.length = len(self.image_path_list)
 
         print(" > before filter_smallset:", len(self.anno_path_list))
-        if not self.debug:
-            self.image_path_list, self.anno_path_list = self.filter_smallset()
-
-        if self.debug:
-            if split == 'train':
-                self.image_path_list, self.anno_path_list = self.image_path_list[:
-                                                                                 200], self.anno_path_list[:
-                                                                                                           200]
-            else:
-                self.image_path_list, self.anno_path_list = self.image_path_list[:
-                                                                                 20], self.anno_path_list[:
-                                                                                                          20]
+        self.image_path_list, self.anno_path_list = self.filter_smallset()
 
         self.length = len(self.image_path_list)
         print(" > after filter_smallset:", len(self.anno_path_list))
