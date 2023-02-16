@@ -65,16 +65,20 @@ python train.py
 python demo.py
 ```
 
-## GPU Memory
+## Log
 
 ```bash
+tensorboard --logdir ./logs --host 0.0.0.0
+```
+
+## GPU Memory
+
 | max_prim | GPU Memory |
 | :-: | :-: |
 | 1000 | 5795M |
 | 2000 | 6611M |
 | 3000 | 7297M |
 | 4000 | 8665M |
-```
 
 ## Enjoy it~
 
