@@ -52,19 +52,24 @@ https://floorplancad.github.io/ -> Train set1, Train set2, Test set
 ## Train
 
 ```bash
-./train.sh
-```
-
-## Eval
-
-```bash
-./eval.sh
+python train.py
 ```
 
 ## Run
 
 ```bash
 python demo.py
+```
+
+## GPU Memory
+
+```bash
+| max_prim | GPU Memory |
+| :-: | :-: |
+| 1000 | 5795M |
+| 2000 | 6611M |
+| 3000 | 7297M |
+| 4000 | 8263M |
 ```
 
 ## Enjoy it~
