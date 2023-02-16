@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import os
-
 import torch
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
+from cad_transformer.Config.args import parse_args
 from cad_transformer.Dataset.cad import CADDataLoader, CADDataset
-from cad_transformer.Method.args import parse_args
 from cad_transformer.Method.eval import do_eval, get_eval_criteria
 from cad_transformer.Method.path import createFileFolder, removeFile, renameFile
 from cad_transformer.Method.time import getCurrentTime

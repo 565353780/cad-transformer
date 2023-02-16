@@ -45,11 +45,15 @@ https://floorplancad.github.io/ -> Train set1, Train set2, Test set
 
 ## Prepare
 
+modify the pre.sh and run
+
 ```bash
 ./pre.sh
 ```
 
 ## Train
+
+modify the cad_transformer/Config/args.py and run
 
 ```bash
 python train.py
@@ -69,7 +73,7 @@ python demo.py
 | 1000 | 5795M |
 | 2000 | 6611M |
 | 3000 | 7297M |
-| 4000 | 8263M |
+| 4000 | 8665M |
 ```
 
 ## Enjoy it~

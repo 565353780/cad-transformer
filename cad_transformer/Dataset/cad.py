@@ -82,16 +82,11 @@ class CADDataset(Dataset):
             adj_node_classes = np.load(ann_path, \
                                     allow_pickle=True).item()
             target = adj_node_classes["cat"]
-            if self.split == "train":
-                if int(self.max_prim * 1.1) >= len(target) >= self.max_prim:
-                    anno_path_list_new.append(self.anno_path_list[idx])
-                    image_path_list_new.append(self.image_path_list[idx])
-                    break
-            else:
-                if int(self.max_prim * 1.1) >= len(target) >= self.max_prim:
-                    anno_path_list_new.append(self.anno_path_list[idx])
-                    image_path_list_new.append(self.image_path_list[idx])
-                    break
+
+            if int(self.max_prim * 1.1) >= len(target) >= self.max_prim:
+                anno_path_list_new.append(self.anno_path_list[idx])
+                image_path_list_new.append(self.image_path_list[idx])
+                break
         return image_path_list_new, anno_path_list_new
 
     def filter_smallset(self):
@@ -104,16 +99,10 @@ class CADDataset(Dataset):
             adj_node_classes = np.load(ann_path, \
                                     allow_pickle=True).item()
             target = adj_node_classes["cat"]
-            if self.split == "train":
-                if self.max_prim >= len(target) >= self.filter_num:
-                    anno_path_list_new.append(self.anno_path_list[idx])
-                    image_path_list_new.append(self.image_path_list[idx])
-            else:
-                #  if len(target) >= self.filter_num:
-                # avoid out of memory
-                if self.max_prim >= len(target) >= self.filter_num:
-                    anno_path_list_new.append(self.anno_path_list[idx])
-                    image_path_list_new.append(self.image_path_list[idx])
+
+            if self.max_prim >= len(target) >= self.filter_num:
+                anno_path_list_new.append(self.anno_path_list[idx])
+                image_path_list_new.append(self.image_path_list[idx])
         return image_path_list_new, anno_path_list_new
 
     def __len__(self):
