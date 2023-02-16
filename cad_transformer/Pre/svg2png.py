@@ -1,5 +1,6 @@
 '''Convert original svg files to png for HRNet feature extraction'''
 import sys
+
 sys.path.append("./")
 
 import os
@@ -138,16 +139,25 @@ def main():
     src = f"{args.data_save_dir}/train-00/*.svg"
     dst = f"{svg_dir}/train"
     cmd = f"cp -r {src}  {dst}"
+    print("[INFO][svg2png::main]")
+    print("\t start running command:")
+    print("\t", cmd)
     os.system(cmd)
 
     src = f"{args.data_save_dir}/train-01/*.svg"
     dst = f"{svg_dir}/val"
     cmd = f"cp -r {src}  {dst}"
+    print("[INFO][svg2png::main]")
+    print("\t start running command:")
+    print("\t", cmd)
     os.system(cmd)
 
     src = f"{args.data_save_dir}/test-00/*.svg"
     dst = f"{svg_dir}/test"
     cmd = f"cp -r {src}  {dst}"
+    print("[INFO][svg2png::main]")
+    print("\t start running command:")
+    print("\t", cmd)
     os.system(cmd)
 
     # # # convert line color to black
