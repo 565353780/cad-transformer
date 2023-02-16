@@ -1,9 +1,5 @@
 DATASET_ROOT_PATH=/home/chli/chLi/FloorPlanCAD
 
-# Demo data, not used
-# python cad_transformer/Pre/download_data.py \
-  # --data_save_dir /home/chli/chLi/CADTransformer
-
 python cad_transformer/Pre/svg2png.py \
   --data_save_dir $DATASET_ROOT_PATH \
   --scale 7
