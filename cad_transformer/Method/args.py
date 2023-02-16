@@ -35,7 +35,7 @@ def parse_args():
                         help='image size of rasterized image')
     parser.add_argument("--max_prim",
                         type=int,
-                        default=3000,
+                        default=4000,
                         help='maximum primitive number for each batch')
     parser.add_argument("--load_ckpt",
                         type=str,

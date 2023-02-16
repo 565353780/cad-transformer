@@ -82,25 +82,49 @@ class CADDataset(Dataset):
 
         self.length = len(self.image_path_list)
         print(" > after filter_smallset:", len(self.anno_path_list))
+        return
 
-    def filter_smallset(self):
+    def filter_smallset_test(self):
+        '''
+        for test gpu memory only
+        '''
         anno_path_list_new = []
         image_path_list_new = []
         for idx, ann_path in tqdm(enumerate(self.anno_path_list),
                                   total=len(self.anno_path_list)):
-            # FIXME: for test only
-            if idx > 10:
-                break
-
             adj_node_classes = np.load(ann_path, \
                                     allow_pickle=True).item()
             target = adj_node_classes["cat"]
-            if self.split == "training":
+            if self.split == "train":
+                if int(self.max_prim * 1.1) >= len(target) >= self.max_prim:
+                    anno_path_list_new.append(self.anno_path_list[idx])
+                    image_path_list_new.append(self.image_path_list[idx])
+                    break
+            else:
+                if int(self.max_prim * 1.1) >= len(target) >= self.max_prim:
+                    anno_path_list_new.append(self.anno_path_list[idx])
+                    image_path_list_new.append(self.image_path_list[idx])
+                    break
+        return image_path_list_new, anno_path_list_new
+
+    def filter_smallset(self):
+        #  return self.filter_smallset_test()
+
+        anno_path_list_new = []
+        image_path_list_new = []
+        for idx, ann_path in tqdm(enumerate(self.anno_path_list),
+                                  total=len(self.anno_path_list)):
+            adj_node_classes = np.load(ann_path, \
+                                    allow_pickle=True).item()
+            target = adj_node_classes["cat"]
+            if self.split == "train":
                 if self.max_prim >= len(target) >= self.filter_num:
                     anno_path_list_new.append(self.anno_path_list[idx])
                     image_path_list_new.append(self.image_path_list[idx])
             else:
-                if len(target) >= self.filter_num:
+                #  if len(target) >= self.filter_num:
+                # avoid out of memory
+                if self.max_prim >= len(target) >= self.filter_num:
                     anno_path_list_new.append(self.anno_path_list[idx])
                     image_path_list_new.append(self.image_path_list[idx])
         return image_path_list_new, anno_path_list_new
