@@ -27,8 +27,9 @@ def get_eval_criteria(epoch):
     return eval
 
 
-def do_eval(model, loaders, logger, cfg):
-    logger.info(f'> Conducting do_eval')
+def do_eval(model, loaders, summary_writer, cfg, step):
+    print("[INFO][eval::do_eval]")
+    print("\t start eval...")
     with torch.no_grad():
         model = model.eval()
         anno_list = anno_config.AnnoList().anno_list_all_reverse
@@ -55,20 +56,25 @@ def do_eval(model, loaders, logger, cfg):
             precision = cnt_tp[cls_id] / (cnt_prd[cls_id] + 1e-4)
             recall = cnt_tp[cls_id] / (cnt_gt[cls_id] + 1e-4)
             f1 = (2 * precision * recall) / (precision + recall + 1e-4)
-            logger.info("ID:[{:3s}], CLASS:[{:20s}], Pred Num: [{:0>7}], GT Num: [{:0>7}], F1:[{:.2%}], Precision:[{:.2%}], Recall:[{:.2%}]".format(\
-                str(cls_id), "BG", cnt_prd[cls_id], cnt_gt[cls_id], f1, precision, recall))
+            summary_writer.add_scalar("F1/BG", f1, step)
+            summary_writer.add_scalar("Precision/BG", precision, step)
+            summary_writer.add_scalar("Recall/BG", recall, step)
             for cls_id in range(1, class_num):
                 precision = cnt_tp[cls_id] / (cnt_prd[cls_id] + 1e-4)
                 recall = cnt_tp[cls_id] / (cnt_gt[cls_id] + 1e-4)
                 f1 = (2 * precision * recall) / (precision + recall + 1e-4)
-                logger.info("ID:[{:3s}], CLASS:[{:20s}], Pred Num: [{:0>7}], GT Num: [{:0>7}], F1:[{:.2%}], Precision:[{:.2%}], Recall:[{:.2%}]".format(\
-                    str(cls_id), anno_list[cls_id], cnt_prd[cls_id], cnt_gt[cls_id], f1, precision, recall))
+                summary_writer.add_scalar("F1/" + anno_list[cls_id], f1, step)
+                summary_writer.add_scalar("Precision/" + anno_list[cls_id],
+                                          precision, step)
+                summary_writer.add_scalar("Recall/" + anno_list[cls_id],
+                                          recall, step)
             tp = sum(cnt_tp[1:])
             gt = sum(cnt_gt[1:])
             pred = sum(cnt_prd[1:])
             precision = tp / pred
             recall = tp / gt
             f1 = (2 * precision * recall) / (precision + recall + 1e-4)
-            logger.info(
-                f'Total FG Precision:{precision}, Recall:{recall}, F1:{f1}')
+            summary_writer.add_scalar("F1/total", f1, step)
+            summary_writer.add_scalar("Precision/total", precision, step)
+            summary_writer.add_scalar("Recall/total", recall, step)
     return f1
