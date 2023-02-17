@@ -30,6 +30,8 @@ class Trainer(object):
     def __init__(self):
         self.args = parse_args()
         self.cfg = update_config(config, self.args)
+        self.eval_only = False
+        self.test_only = False
 
         self.model = CADTransformer(self.cfg).cuda()
 
@@ -196,12 +198,12 @@ class Trainer(object):
 
         #  torch.multiprocessing.set_start_method('spawn', force=True)
 
-        if self.cfg.eval_only:
+        if self.eval_only:
             do_eval(self.model, self.val_dataloader, self.summary_writer,
                     self.cfg)
             exit(0)
 
-        if self.cfg.test_only:
+        if self.test_only:
             do_eval(self.model, self.test_dataloader, self.summary_writer,
                     self.cfg)
             exit(0)
