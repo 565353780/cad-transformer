@@ -30,8 +30,8 @@ class CADDataset(Dataset):
             self.size = cfg.img_size
             self.filter_num = cfg.filter_num
             self.aug_ratio = cfg.aug_ratio
-            self.rgb_dim = cfg.rgb_dim
             # FIXME: why rgb_dim is 32?
+            #  self.rgb_dim = cfg.rgb_dim
             self.rgb_dim = 0
         else:
             self.clus_num_per_batch = 16
@@ -96,6 +96,8 @@ class CADDataset(Dataset):
         image_path_list_new = []
         for idx, ann_path in tqdm(enumerate(self.anno_path_list),
                                   total=len(self.anno_path_list)):
+            if idx > 100:
+                break
             adj_node_classes = np.load(ann_path, \
                                     allow_pickle=True).item()
             target = adj_node_classes["cat"]
@@ -127,8 +129,9 @@ class CADDataset(Dataset):
         xy = torch.from_numpy(np.array(center, dtype=np.float32)).cuda()
 
         if self.rgb_dim > 0:
-            rgb_npy_path = ann_path.replace('/npy/', '/npy_rgb/')
-            rgb_info = np.load(rgb_npy_path, allow_pickle=True).item()['rgbs']
+            #  rgb_npy_path = ann_path.replace('/npy/', '/npy_rgb/')
+            #  rgb_info = np.load(rgb_npy_path, allow_pickle=True).item()['rgbs']
+            rgb_info = np.load(ann_path, allow_pickle=True).item()['ct_norm']
             rgb_info = torch.from_numpy(np.array(rgb_info,
                                                  dtype=np.int64)).cuda()
         else:
