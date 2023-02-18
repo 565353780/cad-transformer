@@ -108,7 +108,7 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
         for path in g.iter(ns + 'path'):
             try:
                 path_repre = parse_path(path.attrib['d'])
-            except Exception as e:
+            except Exception as _:
                 raise RuntimeError("Parse path failed!{}, {}".format(
                     svg_path, path.attrib['d']))
             start = path_repre.point(0)
@@ -123,12 +123,12 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
                 (mid.imag - miny) / height, 1, 0, 0
             ])
             centers.append([mid.real, mid.imag])
-            if 'semanticId' in path.attrib:
-                classes.append([int(path.attrib['semanticId'])])
+            if 'semantic-id' in path.attrib:
+                classes.append([int(path.attrib['semantic-id'])])
             else:
                 classes.append([0])
-            if 'instanceId' in path.attrib:
-                instances.append([int(path.attrib['instanceId'])])
+            if 'instance-id' in path.attrib:
+                instances.append([int(path.attrib['instance-id'])])
             else:
                 instances.append([-1])
         # circle
@@ -143,12 +143,12 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
                 1, 0
             ])
             centers.append([cx, cy])
-            if 'semanticId' in circle.attrib:
-                classes.append([int(circle.attrib['semanticId'])])
+            if 'semantic-id' in circle.attrib:
+                classes.append([int(circle.attrib['semantic-id'])])
             else:
                 classes.append([0])
-            if 'instanceId' in circle.attrib:
-                instances.append([int(circle.attrib['instanceId'])])
+            if 'instance-id' in circle.attrib:
+                instances.append([int(circle.attrib['instance-id'])])
             else:
                 instances.append([-1])
         # ellipse
@@ -162,12 +162,12 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
             nodes.append([(rx + ry) / width, (cx - minx) / width,
                           (cy - miny) / height, 0, 0, 1])
             centers.append([cx, cy])
-            if 'semanticId' in ellipse.attrib:
-                classes.append([int(ellipse.attrib['semanticId'])])
+            if 'semantic-id' in ellipse.attrib:
+                classes.append([int(ellipse.attrib['semantic-id'])])
             else:
                 classes.append([0])
-            if 'instanceId' in ellipse.attrib:
-                instances.append([int(ellipse.attrib['instanceId'])])
+            if 'instance-id' in ellipse.attrib:
+                instances.append([int(ellipse.attrib['instance-id'])])
             else:
                 instances.append([-1])
 
