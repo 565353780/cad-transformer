@@ -103,6 +103,8 @@ class Trainer(object):
         self.best_F1 = model_dict['best_F1']
         self.log_folder_name = model_dict['log_folder_name']
 
+        self.loadSummaryWriter()
+
         for state in self.optimizer.state.values():
             for k, v in state.items():
                 if torch.is_tensor(v):

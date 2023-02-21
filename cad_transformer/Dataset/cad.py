@@ -96,8 +96,6 @@ class CADDataset(Dataset):
         image_path_list_new = []
         for idx, ann_path in tqdm(enumerate(self.anno_path_list),
                                   total=len(self.anno_path_list)):
-            if idx > 100:
-                break
             adj_node_classes = np.load(ann_path, \
                                     allow_pickle=True).item()
             target = adj_node_classes["cat"]
