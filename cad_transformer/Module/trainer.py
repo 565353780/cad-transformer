@@ -76,6 +76,7 @@ class Trainer(object):
         self.CE_loss = torch.nn.CrossEntropyLoss().cuda()
 
         self.step = 0
+        self.epoch = 0
         self.best_F1 = 0
         self.log_folder_name = getCurrentTime()
 
@@ -100,6 +101,7 @@ class Trainer(object):
         self.model.load_state_dict(model_dict['model'])
         self.optimizer.load_state_dict(model_dict['optimizer'])
         self.step = model_dict['step']
+        self.epoch = model_dict['epoch']
         self.best_F1 = model_dict['best_F1']
         self.log_folder_name = model_dict['log_folder_name']
 
@@ -120,6 +122,7 @@ class Trainer(object):
             'model': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'step': self.step,
+            'epoch': self.epoch,
             'best_F1': self.best_F1,
             'log_folder_name': self.log_folder_name,
         }
@@ -210,25 +213,28 @@ class Trainer(object):
                     self.cfg)
             exit(0)
 
-        for epoch in range(self.cfg.epoch):
-            print(f'Epoch {epoch + 1} ({epoch + 1}/{self.cfg.epoch})')
+        while self.epoch < self.cfg.epoch:
+            print(
+                f'Epoch {self.epoch + 1} ({self.epoch + 1}/{self.cfg.epoch})')
 
-            self.updateLearningRate(epoch)
-            self.updateMomentum(epoch)
+            self.updateLearningRate(self.epoch)
+            self.updateMomentum(self.epoch)
 
             self.model = self.model.train()
 
             for_data = self.train_dataloader
             if print_progress:
                 print("[INFO][Trainer::train]")
-                print("\t start train at epoch " + str(epoch) + "...")
+                print("\t start train at epoch " + str(self.epoch + 1) + "...")
                 for_data = tqdm(for_data, total=len(for_data), smoothing=0.9)
             for data in for_data:
                 self.trainStep(data)
                 self.step += 1
 
+            self.epoch += 1
+
             save_path = './output/' + self.log_folder_name + '/model_last.pth'
             self.saveModel(save_path)
 
-            self.eval(epoch)
+            self.eval(self.epoch)
         return True
