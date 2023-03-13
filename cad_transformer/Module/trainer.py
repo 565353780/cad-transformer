@@ -138,12 +138,12 @@ class Trainer(object):
         renameFile(tmp_save_model_file_path, save_model_file_path)
         return True
 
-    def updateLearningRate(self, epoch):
+    def updateLearningRate(self):
         lr = max(
             self.cfg.learning_rate *
-            (self.cfg.lr_decay**(epoch // self.cfg.step_size)),
+            (self.cfg.lr_decay**(self.epoch // self.cfg.step_size)),
             self.cfg.LEARNING_RATE_CLIP)
-        if epoch <= self.cfg.epoch_warmup:
+        if self.epoch <= self.cfg.epoch_warmup:
             lr = self.cfg.learning_rate_warmup
 
         for param_group in self.optimizer.param_groups:
@@ -152,9 +152,9 @@ class Trainer(object):
         self.summary_writer.add_scalar("Train/lr", lr, self.step)
         return True
 
-    def updateMomentum(self, epoch):
-        momentum = self.cfg.MOMENTUM_ORIGINAL * (self.cfg.MOMENTUM_DECCAY**
-                                                 (epoch // self.cfg.step_size))
+    def updateMomentum(self):
+        momentum = self.cfg.MOMENTUM_ORIGINAL * (self.cfg.MOMENTUM_DECCAY**(
+            self.epoch // self.cfg.step_size))
         if momentum < 0.01:
             momentum = 0.01
         self.model = self.model.apply(
@@ -206,19 +206,19 @@ class Trainer(object):
         if self.eval_only:
             do_eval(self.model, self.val_dataloader, self.summary_writer,
                     self.cfg)
-            exit(0)
+            return True
 
         if self.test_only:
             do_eval(self.model, self.test_dataloader, self.summary_writer,
                     self.cfg)
-            exit(0)
+            return True
 
         while self.epoch < self.cfg.epoch:
             print(
                 f'Epoch {self.epoch + 1} ({self.epoch + 1}/{self.cfg.epoch})')
 
-            self.updateLearningRate(self.epoch)
-            self.updateMomentum(self.epoch)
+            self.updateLearningRate()
+            self.updateMomentum()
 
             self.model = self.model.train()
 
