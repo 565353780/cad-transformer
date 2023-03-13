@@ -92,4 +92,5 @@ class Detector(object):
 
             seg_pred = self.detect(image, xy, rgb_info, nns)
             print(seg_pred)
+            del seg_pred
         return True
