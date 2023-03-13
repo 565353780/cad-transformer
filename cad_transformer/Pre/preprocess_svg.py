@@ -102,7 +102,7 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
     centers = []
     classes = []
     instances = []
-    starts_ends = []
+    #  starts_ends = []
     for g in root.iter(ns + 'g'):
         # path
         for path in g.iter(ns + 'path'):
@@ -198,6 +198,7 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
     }
     npy_path = os.path.join(output_dir, basename.replace(".svg", ".npy"))
     np.save(npy_path, data_gcn)
+    return True
 
 
 def visualize_graph(root, centers, nns, vis_path):
@@ -212,25 +213,24 @@ def visualize_graph(root, centers, nns, vis_path):
             'stroke-width': '0.25',
             'tag': 'g'
         })
-    # for i in range(adj.shape[0]):
-    #     s0, s1 = adj[i]
-    #     s0cx, s0cy = centers[s0]
-    #     s1cx, s1cy = centers[s1]
-    #     polyline = ET.SubElement(g, 'polyline', {
-    #         'points': '{0}, {1} {2}, {3}'.format(s0cx, s0cy, s1cx, s1cy),
-    #         'tag': 'polyline'})
 
     # visualize center points
-    # for i in range(len(centers)):
-    #     s0cx, s0cy = centers[i]
-    #     polyline = ET.SubElement(g, 'circle', {
-    #         'cx': f'{s0cx}', 'cy': f'{s0cy}', "r":"0.1", "stroke":"rgb(255,0,0)", "fill":"rgb(255,0,0)",
-    #         'tag': 'circle'})
+    for i in range(len(centers)):
+        s0cx, s0cy = centers[i]
+        ET.SubElement(
+            g, 'circle', {
+                'cx': f'{s0cx}',
+                'cy': f'{s0cy}',
+                "r": "0.1",
+                "stroke": "rgb(255,0,0)",
+                "fill": "rgb(255,0,0)",
+                'tag': 'circle'
+            })
 
     # visualize NNs
     for i in range(len(centers[:1])):
         s0cx, s0cy = centers[i]
-        polyline = ET.SubElement(
+        ET.SubElement(
             g, 'circle', {
                 'cx': f'{s0cx}',
                 'cy': f'{s0cy}',
@@ -242,7 +242,7 @@ def visualize_graph(root, centers, nns, vis_path):
         for j in range(len(nns[i][:16])):
             jj = nns[i][j]
             s0cx, s0cy = centers[jj]
-            polyline = ET.SubElement(
+            ET.SubElement(
                 g, 'circle', {
                     'cx': f'{s0cx}',
                     'cy': f'{s0cy}',
@@ -254,6 +254,7 @@ def visualize_graph(root, centers, nns, vis_path):
     prettyxml = BeautifulSoup(ET.tostring(root, 'utf-8'), "xml").prettify()
     with open(vis_path, "w") as f:
         f.write(prettyxml)
+    return True
 
 
 def main():
