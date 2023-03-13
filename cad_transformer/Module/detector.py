@@ -82,7 +82,7 @@ class Detector(object):
             xy = torch.from_numpy(np.array(
                 center, dtype=np.float32)).cuda().unsqueeze(0)
 
-            rgb_info = np.load(ann_path, allow_pickle=True).item()['ct_norm']
+            rgb_info = adj_node_classes['ct_norm']
             rgb_info = torch.from_numpy(np.array(
                 rgb_info, dtype=np.int64)).cuda().unsqueeze(0)
 
@@ -91,6 +91,6 @@ class Detector(object):
                 nns, dtype=np.int64)).cuda().unsqueeze(0)
 
             seg_pred = self.detect(image, xy, rgb_info, nns)
-            print(seg_pred)
+            print(seg_pred.shape)
             del seg_pred
         return True
