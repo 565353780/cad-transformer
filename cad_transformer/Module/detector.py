@@ -52,7 +52,9 @@ class Detector(object):
     def detect(self, image, xy, rgb_info, nns):
         seg_pred = self.model(image, xy, rgb_info, nns)
         seg_pred = seg_pred.contiguous().view(-1, self.cfg.num_class + 1)
-        return seg_pred
+        result = seg_pred.detach().cpu()
+        del seg_pred
+        return result
 
     def detectDataset(self, print_progress=False):
         dataset = CADDataset(split='test',
@@ -92,5 +94,4 @@ class Detector(object):
 
             seg_pred = self.detect(image, xy, rgb_info, nns)
             print(seg_pred.shape)
-            del seg_pred
         return True
