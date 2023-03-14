@@ -28,16 +28,29 @@ def test():
         half_height = height / 2
 
         for g in root.iter(ns + 'g'):
+            print('path num =', len(list(g.iter(ns + 'path'))))
+            print('circle num =', len(list(g.iter(ns + 'circle'))))
+            print('ellipse num =', len(list(g.iter(ns + 'ellipse'))))
             for path in g.iter(ns + 'path'):
+                break
                 path_repre = parse_path(path.attrib['d'])
-                print(path_repre)
-                print(path.attrib.keys())
                 if 'semantic-id' in path.attrib:
                     print(path.attrib['semantic-id'])
                 else:
                     print('semantic-id not exist! set to 0')
                 if 'instance-id' in path.attrib:
                     print(path.attrib['instance-id'])
+                else:
+                    print('instance-id not exist! set to -1')
+
+            for circle in g.iter(ns + 'circle'):
+                print('circle_idx =', circle_idx)
+                if 'semantic-id' in circle.attrib:
+                    print(circle.attrib['semantic-id'])
+                else:
+                    print('semantic-id not exist! set to 0')
+                if 'instance-id' in circle.attrib:
+                    print(circle.attrib['instance-id'])
                 else:
                     print('instance-id not exist! set to -1')
         return
