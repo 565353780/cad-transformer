@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.join(BASE_DIR, "../", "../"))
 sys.path.insert(0, os.path.join(BASE_DIR, "../"))
 
 from cad_transformer.Config.default import _C as config, update_config
+from cad_transformer.Config.args import parse_args
 from cad_transformer.Model.cad_transformer import CADTransformer
-from cad_transformer.Method.args import parse_args
 
 args = parse_args()
 cfg = update_config(config, args)
