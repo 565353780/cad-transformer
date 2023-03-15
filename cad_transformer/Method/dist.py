@@ -10,7 +10,7 @@ def square_distance(src, dst):
     return torch.sum((src[:, :, None] - dst[:, None])**2, dim=-1)
 
 
-def get_nn(segments, max_degree=4):
+def get_nn(segments, max_degree=4, avoid_self_idx=False):
     '''Calculate the neighbors of each point
     '''
     segments = torch.Tensor(segments)
@@ -19,7 +19,7 @@ def get_nn(segments, max_degree=4):
     p_end = segments[:, 2:].unsqueeze(0)
 
     nns_list = []
-    for seg in segments:
+    for i, seg in enumerate(segments):
         i_start = seg[:2].unsqueeze(0).unsqueeze(0)
         i_end = seg[2:].unsqueeze(0).unsqueeze(0)
 
@@ -27,6 +27,12 @@ def get_nn(segments, max_degree=4):
         dist_istart_pend = square_distance(i_start, p_end)[0, :]
         dist_iend_pstart = square_distance(i_end, p_start)[0, :]
         dist_iend_pend = square_distance(i_end, p_end)[0, :]
+
+        if avoid_self_idx:
+            dist_istart_pstart[0][i] = float('inf')
+            dist_istart_pend[0][i] = float('inf')
+            dist_iend_pstart[0][i] = float('inf')
+            dist_iend_pend[0][i] = float('inf')
 
         dist_cat = torch.cat([
             dist_istart_pstart, dist_istart_pend, dist_iend_pstart,

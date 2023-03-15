@@ -67,7 +67,11 @@ def visualize_graph(root, centers, nns, vis_path):
     return True
 
 
-def svg2graph(svg_path, output_dir, max_degree, visualize):
+def svg2graph(svg_path,
+              output_dir,
+              max_degree,
+              visualize,
+              avoid_self_idx=False):
     '''Construct the graph of each drawing
     '''
     tree = ET.parse(svg_path)
@@ -155,7 +159,7 @@ def svg2graph(svg_path, output_dir, max_degree, visualize):
                 instances.append([-1])
 
     segments = np.array(segments)
-    nns = get_nn(deepcopy(segments), max_degree=max_degree)
+    nns = get_nn(deepcopy(segments), max_degree, avoid_self_idx)
     if segments.shape[0] < 2:
         print('Warning: too few segments')
         return
