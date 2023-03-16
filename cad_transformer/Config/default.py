@@ -53,7 +53,6 @@ _C.input_dim = 2
 _C.input_embed_dim = 384
 _C.inter_dim = 384
 _C.rgb_dim = 32
-_C.am_softmax = True
 _C.deg_embed = False
 _C.weight_decay = 1e-4
 _C.num_class = 35

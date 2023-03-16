@@ -28,16 +28,12 @@ class CADTransformer(nn.Module):
             nn.Linear(self.inter_dim * 2, self.inter_dim * 2),
             nn.ReLU(),
         )
-        if cfg.am_softmax == 1:
-            print("> AMSoftmaxLayer")
-            self.last_linear = AMSoftmaxLayer(self.inter_dim * 2,
-                                              self.n_c,
-                                              s=30)
-        else:
-            self.last_linear = nn.Linear(self.inter_dim * 2, self.n_c)
+
+        self.last_linear = AMSoftmaxLayer(self.inter_dim * 2, self.n_c, s=30)
+        #  self.last_linear = nn.Linear(self.inter_dim * 2, self.n_c)
         return
 
-    def forward(self, image, xy, _, nns):
+    def forward(self, image, xy, nns):
         xy_embed = self.input_embed(image, xy)
         xy_embed = self.fc_bottleneck(xy_embed)
 
