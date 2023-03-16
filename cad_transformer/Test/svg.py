@@ -32,7 +32,6 @@ def test():
             print('circle num =', len(list(g.iter(ns + 'circle'))))
             print('ellipse num =', len(list(g.iter(ns + 'ellipse'))))
             for path in g.iter(ns + 'path'):
-                break
                 path_repre = parse_path(path.attrib['d'])
                 if 'semantic-id' in path.attrib:
                     print(path.attrib['semantic-id'])
@@ -44,7 +43,6 @@ def test():
                     print('instance-id not exist! set to -1')
 
             for circle in g.iter(ns + 'circle'):
-                print('circle_idx =', circle_idx)
                 if 'semantic-id' in circle.attrib:
                     print(circle.attrib['semantic-id'])
                 else:
