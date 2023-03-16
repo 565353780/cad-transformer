@@ -30,16 +30,12 @@ class CADDataset(Dataset):
             self.size = cfg.img_size
             self.filter_num = cfg.filter_num
             self.aug_ratio = cfg.aug_ratio
-            # FIXME: why rgb_dim is 32?
-            self.rgb_dim = cfg.rgb_dim
-            #  self.rgb_dim = 0
         else:
             self.clus_num_per_batch = 16
             self.nn = 64
             self.size = 700
             self.filter_num = 64
             self.aug_ratio = 0.5
-            self.rgb_dim = 0
         # transformations
         transform = [T.ToTensor()]
         if do_norm:
@@ -122,53 +118,29 @@ class CADDataset(Dataset):
 
         adj_node_classes = np.load(ann_path, \
                             allow_pickle=True).item()
-        target = adj_node_classes["cat"]
-        target = torch.from_numpy(np.array(target, dtype=np.int64)).cuda()
 
         center = adj_node_classes["ct_norm"]
         xy = torch.from_numpy(np.array(center, dtype=np.float32)).cuda()
 
-        if self.rgb_dim > 0:
-            #  rgb_npy_path = ann_path.replace('/npy/', '/npy_rgb/')
-            #  rgb_info = np.load(rgb_npy_path, allow_pickle=True).item()['rgbs']
-            rgb_info = adj_node_classes['ct_norm']
-            rgb_info = torch.from_numpy(np.array(rgb_info,
-                                                 dtype=np.int64)).cuda()
-        else:
-            rgb_info = xy
-
         nns = adj_node_classes["nns"]
         nns = torch.from_numpy(np.array(nns, dtype=np.int64)).cuda()
 
-        instance = adj_node_classes["inst"]
-        instance_center = self.get_instance_center_tensor(instance,
-                                                          center,
-                                                          semantic=target,
-                                                          img_path=img_path)
-        instance = torch.from_numpy(np.array(instance,
-                                             dtype=np.float32)).cuda()
-        offset = xy - instance_center
+        target = adj_node_classes["cat"]
+        target = torch.from_numpy(np.array(target, dtype=np.int64)).cuda()
 
-        indexes = torch.Tensor([1]).cuda()
-        basename = os.path.basename(img_path)
-
-        return image, xy, target, rgb_info, nns, offset, instance, indexes, basename
+        return image, xy, nns, target
 
     def __getitem__(self, index):
         return self._get_item(index)
 
-    def random_sample(self, image, xy, target, rgb_info, nns, offset, instance,
-                      indexes, basename):
+    def random_sample(self, image, xy, target, nns):
         length = xy.shape[0]
         rand_idx = random.sample(range(length), self.max_prim)
         rand_idx = sorted(rand_idx)
         xy = xy[rand_idx]
         target = target[rand_idx]
-        rgb_info = rgb_info[rand_idx]
         nns = nns[rand_idx]
-        offset = offset[rand_idx]
-        instance = instance[rand_idx]
-        return image, xy, target, rgb_info, nns, offset, instance, indexes, basename
+        return image, xy, target, nns
 
     def set_random_seed(self, seed, deterministic=False):
         random.seed(seed)

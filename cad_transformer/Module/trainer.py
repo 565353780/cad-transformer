@@ -164,11 +164,11 @@ class Trainer(object):
         return True
 
     def trainStep(self, data):
-        image, xy, target, rgb_info, nns, _, _, _, _ = data
+        image, xy, nns, target = data
 
         self.optimizer.zero_grad()
 
-        seg_pred = self.model(image, xy, rgb_info, nns)
+        seg_pred = self.model(image, xy, nns)
         seg_pred = seg_pred.contiguous().view(-1, self.cfg.num_class + 1)
         target = target.view(-1, 1)[:, 0]
 

@@ -49,8 +49,8 @@ class Detector(object):
         self.model.eval()
         return True
 
-    def detect(self, image, xy, rgb_info, nns):
-        seg_pred = self.model(image, xy, rgb_info, nns)
+    def detect(self, image, xy, nns):
+        seg_pred = self.model(image, xy, nns)
         seg_pred = seg_pred.contiguous().view(-1, self.cfg.num_class + 1)
         result = seg_pred.detach().cpu()
         del seg_pred
@@ -84,14 +84,10 @@ class Detector(object):
             xy = torch.from_numpy(np.array(
                 center, dtype=np.float32)).cuda().unsqueeze(0)
 
-            rgb_info = adj_node_classes['ct_norm']
-            rgb_info = torch.from_numpy(np.array(
-                rgb_info, dtype=np.int64)).cuda().unsqueeze(0)
-
             nns = adj_node_classes["nns"]
             nns = torch.from_numpy(np.array(
                 nns, dtype=np.int64)).cuda().unsqueeze(0)
 
-            seg_pred = self.detect(image, xy, rgb_info, nns)
+            seg_pred = self.detect(image, xy, nns)
             print(seg_pred.shape)
         return True
