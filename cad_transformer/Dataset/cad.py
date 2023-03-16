@@ -65,6 +65,11 @@ class CADDataset(Dataset):
 
         self.length = len(self.image_path_list)
         print(" > after filter_smallset:", len(self.anno_path_list))
+
+        self.train_class_dict = {
+            'wall': [33, 34],
+        }
+        self.train_mode = 'wall'
         return
 
     def filter_smallset_test(self):
@@ -106,7 +111,7 @@ class CADDataset(Dataset):
     def __len__(self):
         return self.length
 
-    def _get_item(self, index):
+    def _get_item(self, index, remain_idx_list=None):
         img_path = self.image_path_list[index]
         ann_path = self.anno_path_list[index]
         assert os.path.basename(img_path).split(".")[0] == \
@@ -126,12 +131,22 @@ class CADDataset(Dataset):
         nns = torch.from_numpy(np.array(nns, dtype=np.int64)).cuda()
 
         target = adj_node_classes["cat"]
-        target = torch.from_numpy(np.array(target, dtype=np.int64)).cuda()
+        target = np.array(target, dtype=np.int64)
+
+        if remain_idx_list is not None:
+            remain_mask = np.zeros_like(target, dtype=bool)
+            for remain_idx in remain_idx_list:
+                remain_mask = remain_mask | (target == remain_idx)
+
+            remove_mask = ~remain_mask
+            target[remove_mask] = 0
+
+        target = torch.from_numpy(target).cuda()
 
         return image, xy, nns, target
 
     def __getitem__(self, index):
-        return self._get_item(index)
+        return self._get_item(index, self.train_class_dict[self.train_mode])
 
     def random_sample(self, image, xy, target, nns):
         length = xy.shape[0]
