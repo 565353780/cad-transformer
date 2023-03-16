@@ -20,6 +20,9 @@ def test():
                          max_prim=cfg.max_prim)
 
     for i in tqdm(range(len(dataset))):
-        data = dataset.__getitem__(i)
-        print(data)
+        image, xy, nns, target = dataset.__getitem__(i)
+        print(image.size)
+        print(xy.shape)
+        print(nns.shape)
+        print(target.shape)
     return True
