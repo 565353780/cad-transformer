@@ -4,6 +4,8 @@
 import torch
 from tqdm import tqdm
 
+from cad_transformer.Config.anno_config import AnnoList
+
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
@@ -31,7 +33,7 @@ def do_eval(model, loaders, summary_writer, cfg, step):
         cnt_prd, cnt_gt, cnt_tp = \
             [torch.Tensor([0 for _ in range(class_num)]).cuda() for _ in range(3)]
         with tqdm(loaders, total=len(loaders), smoothing=0.9) as _tqdm:
-            for image, xy, target, nns in _tqdm:
+            for image, xy, nns, target in _tqdm:
                 seg_pred = model(image, xy, nns)
                 seg_pred = seg_pred.contiguous().view(-1, cfg.num_class + 1)
                 target = target.view(-1, 1)[:, 0]
