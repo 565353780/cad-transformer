@@ -88,7 +88,7 @@ class Trainer(object):
                                             "/")
         return True
 
-    def loadModel(self, model_file_path):
+    def loadModel(self, model_file_path, load_model_only=False):
         if not os.path.exists(model_file_path):
             self.loadSummaryWriter()
             print("[WARN][Trainer::loadModel]")
@@ -99,11 +99,13 @@ class Trainer(object):
         #  map_location=torch.device("cpu"))
 
         self.model.load_state_dict(model_dict['model'])
-        self.optimizer.load_state_dict(model_dict['optimizer'])
-        self.step = model_dict['step']
-        self.epoch = model_dict['epoch']
-        self.best_F1 = model_dict['best_F1']
-        self.log_folder_name = model_dict['log_folder_name']
+
+        if not load_model_only:
+            self.optimizer.load_state_dict(model_dict['optimizer'])
+            self.step = model_dict['step']
+            self.epoch = model_dict['epoch']
+            self.best_F1 = model_dict['best_F1']
+            self.log_folder_name = model_dict['log_folder_name']
 
         self.loadSummaryWriter()
 

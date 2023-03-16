@@ -5,10 +5,11 @@ from cad_transformer.Module.trainer import Trainer
 
 
 def demo():
-    model_file_path = "./output/20230219_14:10:00/model_best.pth"
+    model_file_path = "./output/all_class_pretrained/model_best.pth"
+    load_model_only = True
     print_progress = True
 
     trainer = Trainer()
-    trainer.loadModel(model_file_path)
+    trainer.loadModel(model_file_path, load_model_only)
     trainer.train(print_progress)
     return True
