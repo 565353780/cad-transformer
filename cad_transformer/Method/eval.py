@@ -10,19 +10,6 @@ torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
 
-def get_eval_criteria(epoch):
-    eval = False
-    if epoch < 50:
-        if epoch % 5 == 0:
-            eval = True
-    if 50 < epoch < 1e5:
-        if epoch % 5 == 0:
-            eval = True
-    if epoch == 0 or epoch == 1:
-        eval = True
-    return eval
-
-
 def do_eval(model, loaders, summary_writer, cfg, step):
     print("[INFO][eval::do_eval]")
     print("\t start eval...")

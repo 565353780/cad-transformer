@@ -10,7 +10,7 @@ from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
 from cad_transformer.Config.args import parse_args
 from cad_transformer.Dataset.cad import CADDataLoader, CADDataset
-from cad_transformer.Method.eval import do_eval, get_eval_criteria
+from cad_transformer.Method.eval import do_eval
 from cad_transformer.Method.path import createFileFolder, removeFile, renameFile
 from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Model.cad_transformer import CADTransformer
@@ -183,9 +183,6 @@ class Trainer(object):
         return True
 
     def eval(self, epoch):
-        if not get_eval_criteria(epoch):
-            return True
-
         print("[INFO][Trainer::eval]")
         print("\t start eval at epoch " + str(epoch) + "...")
         eval_F1 = do_eval(self.model, self.val_dataloader, self.summary_writer,
