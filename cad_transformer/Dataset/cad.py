@@ -15,6 +15,7 @@ from pdb import set_trace as st
 from torch.utils.data import Dataset, DataLoader
 
 from cad_transformer.Config.image_net import IMAGENET_MEAN, IMAGENET_STD
+from cad_transformer.Config.anno_config import TRAIN_CLASS_DICT, TRAIN_MODE
 
 
 class CADDataset(Dataset):
@@ -65,11 +66,6 @@ class CADDataset(Dataset):
 
         self.length = len(self.image_path_list)
         print(" > after filter_smallset:", len(self.anno_path_list))
-
-        self.train_class_dict = {
-            'wall': [33, 34],
-        }
-        self.train_mode = 'wall'
         return
 
     def filter_smallset_test(self):
@@ -111,7 +107,7 @@ class CADDataset(Dataset):
     def __len__(self):
         return self.length
 
-    def _get_item(self, index, remain_idx_list=None):
+    def _get_item(self, index):
         img_path = self.image_path_list[index]
         ann_path = self.anno_path_list[index]
         assert os.path.basename(img_path).split(".")[0] == \
@@ -133,6 +129,7 @@ class CADDataset(Dataset):
         target = adj_node_classes["cat"]
         target = np.array(target, dtype=np.int64)
 
+        remain_idx_list = TRAIN_CLASS_DICT[TRAIN_MODE]
         if remain_idx_list is not None:
             remain_mask = np.zeros_like(target, dtype=bool)
             for remain_idx in remain_idx_list:
@@ -146,7 +143,7 @@ class CADDataset(Dataset):
         return image, xy, nns, target
 
     def __getitem__(self, index):
-        return self._get_item(index, self.train_class_dict[self.train_mode])
+        return self._get_item(index)
 
     def random_sample(self, image, xy, target, nns):
         length = xy.shape[0]

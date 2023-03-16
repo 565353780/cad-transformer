@@ -137,6 +137,7 @@ class AnnoList:
     def __init__(self):
         # all classes
         self.anno_list_all = {
+            'BG': 0,
             'single door': 1,
             'double door': 2,
             'sliding door': 3,
@@ -230,3 +231,10 @@ class AnnoList:
             v: k
             for k, v in self.anno_list_door_wind.items()
         }
+
+
+TRAIN_CLASS_DICT = {
+    'all': range(36),
+    'wall': [33, 34],
+}
+TRAIN_MODE = 'wall'
