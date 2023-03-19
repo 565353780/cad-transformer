@@ -10,12 +10,12 @@ torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
 
-def do_eval(model, loaders, summary_writer, cfg, step):
+def do_eval(model, loaders, summary_writer, cfg, step, train_mode='all'):
     print("[INFO][eval::do_eval]")
     print("\t start eval...")
     with torch.no_grad():
         model = model.eval()
-        anno_list = AnnoList().anno_list_all_reverse
+        anno_list = AnnoList(train_mode).anno_list_all_reverse
         class_num = len(anno_list)
         cnt_prd, cnt_gt, cnt_tp = \
             [torch.Tensor([0 for _ in range(class_num)]).cuda() for _ in range(3)]

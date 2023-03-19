@@ -27,7 +27,9 @@ def bn_momentum_adjust(m, momentum):
 
 class Trainer(object):
 
-    def __init__(self):
+    def __init__(self, train_mode='all'):
+        self.train_mode = train_mode
+
         self.args = parse_args()
         self.cfg = update_config(config, self.args)
         self.eval_only = False
@@ -35,10 +37,8 @@ class Trainer(object):
 
         self.model = CADTransformer(self.cfg).cuda()
 
-        val_dataset = CADDataset(split='val',
-                                 do_norm=self.cfg.do_norm,
-                                 cfg=self.cfg,
-                                 max_prim=self.cfg.max_prim)
+        val_dataset = CADDataset('val', self.cfg.do_norm, self.cfg,
+                                 self.cfg.max_prim, self.train_mode)
         self.val_dataloader = CADDataLoader(
             0,
             dataset=val_dataset,
@@ -46,10 +46,8 @@ class Trainer(object):
             shuffle=False,
             num_workers=self.cfg.WORKERS,
             drop_last=False)
-        test_dataset = CADDataset(split='test',
-                                  do_norm=self.cfg.do_norm,
-                                  cfg=self.cfg,
-                                  max_prim=self.cfg.max_prim)
+        test_dataset = CADDataset('test', self.cfg.do_norm, self.cfg,
+                                  self.cfg.max_prim, self.train_mode)
         self.test_dataloader = CADDataLoader(
             0,
             dataset=test_dataset,
@@ -57,10 +55,8 @@ class Trainer(object):
             shuffle=False,
             num_workers=self.cfg.WORKERS,
             drop_last=False)
-        train_dataset = CADDataset(split='train',
-                                   do_norm=self.cfg.do_norm,
-                                   cfg=self.cfg,
-                                   max_prim=self.cfg.max_prim)
+        train_dataset = CADDataset('train', self.cfg.do_norm, self.cfg,
+                                   self.cfg.max_prim, self.train_mode)
         self.train_dataloader = CADDataLoader(0,
                                               dataset=train_dataset,
                                               batch_size=self.cfg.batch_size,
@@ -85,7 +81,7 @@ class Trainer(object):
 
     def loadSummaryWriter(self):
         self.summary_writer = SummaryWriter("./logs/" + self.log_folder_name +
-                                            "/")
+                                            "_" + self.train_mode + "/")
         return True
 
     def loadModel(self, model_file_path, load_model_only=False):
@@ -96,7 +92,6 @@ class Trainer(object):
             return True
 
         model_dict = torch.load(model_file_path)
-        #  map_location=torch.device("cpu"))
 
         self.model.load_state_dict(model_dict['model'])
 
@@ -186,7 +181,7 @@ class Trainer(object):
         print("[INFO][Trainer::eval]")
         print("\t start eval at epoch " + str(epoch) + "...")
         eval_F1 = do_eval(self.model, self.val_dataloader, self.summary_writer,
-                          self.cfg, self.step)
+                          self.cfg, self.step, self.train_mode)
 
         if eval_F1 <= self.best_F1:
             return True

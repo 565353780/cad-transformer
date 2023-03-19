@@ -5,11 +5,12 @@ from cad_transformer.Module.trainer import Trainer
 
 
 def demo():
-    model_file_path = "./output/20230316_23:53:57/model_best.pth"
+    model_file_path = ''
+    train_mode = 'wall'
     load_model_only = False
     print_progress = True
 
-    trainer = Trainer()
+    trainer = Trainer(train_mode)
     trainer.loadModel(model_file_path, load_model_only)
     trainer.train(print_progress)
     return True
