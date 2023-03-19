@@ -36,7 +36,7 @@ class Trainer(object):
         self.eval_only = False
         self.test_only = False
 
-        self.class_num = len(AnnoList(train_mode).anno_list_all_reverse)
+        self.class_num = len(AnnoList(self.train_mode).anno_list_all_reverse)
 
         self.model = CADTransformer(self.cfg, self.class_num).cuda()
 
@@ -184,7 +184,7 @@ class Trainer(object):
         print("[INFO][Trainer::eval]")
         print("\t start eval at epoch " + str(epoch) + "...")
         eval_F1 = do_eval(self.model, self.val_dataloader, self.summary_writer,
-                          self.cfg, self.step, self.train_mode)
+                          self.step, self.train_mode)
 
         if eval_F1 <= self.best_F1:
             return True
@@ -202,12 +202,12 @@ class Trainer(object):
 
         if self.eval_only:
             do_eval(self.model, self.val_dataloader, self.summary_writer,
-                    self.cfg)
+                    self.step, self.train_mode)
             return True
 
         if self.test_only:
             do_eval(self.model, self.test_dataloader, self.summary_writer,
-                    self.cfg)
+                    self.step, self.train_mode)
             return True
 
         while self.epoch < self.cfg.epoch:

@@ -20,7 +20,7 @@ class CADTransformer(nn.Module):
 
         self.input_embed = InputEmbed(cfg)
         self.fc_bottleneck = nn.Linear(cfg.input_embed_dim, cfg.inter_dim)
-        self.transformers = get_vit(pretrained=True, cfg=cfg)
+        self.transformers = get_vit(True, cfg)
 
         self.fc3 = nn.Sequential(
             nn.Linear(self.inter_dim, self.inter_dim * 2),
@@ -29,8 +29,8 @@ class CADTransformer(nn.Module):
             nn.ReLU(),
         )
 
-        self.last_linear = AMSoftmaxLayer(self.inter_dim * 2, self.n_c, s=30)
-        #  self.last_linear = nn.Linear(self.inter_dim * 2, self.n_c)
+        #  self.last_linear = AMSoftmaxLayer(self.inter_dim * 2, self.n_c, s=30)
+        self.last_linear = nn.Linear(self.inter_dim * 2, self.n_c)
         return
 
     def forward(self, image, xy, nns):

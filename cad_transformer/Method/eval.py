@@ -10,7 +10,7 @@ torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
 
-def do_eval(model, loaders, summary_writer, cfg, step, train_mode='all'):
+def do_eval(model, loaders, summary_writer, step, train_mode='all'):
     print("[INFO][eval::do_eval]")
     print("\t start eval...")
     with torch.no_grad():
@@ -22,7 +22,7 @@ def do_eval(model, loaders, summary_writer, cfg, step, train_mode='all'):
         with tqdm(loaders, total=len(loaders), smoothing=0.9) as _tqdm:
             for image, xy, nns, target in _tqdm:
                 seg_pred = model(image, xy, nns)
-                seg_pred = seg_pred.contiguous().view(-1, cfg.num_class + 1)
+                seg_pred = seg_pred.contiguous().view(-1, class_num)
                 target = target.view(-1, 1)[:, 0]
                 pred_choice = seg_pred.data.max(1)[1]
                 # Squeeze
