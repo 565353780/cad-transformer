@@ -233,8 +233,11 @@ class AnnoList:
         }
 
 
-TRAIN_CLASS_DICT = {
-    'all': range(36),
-    'wall': [33, 34],
+TRAIN_CLASS_MAP_DICT = {
+    'all': {str(i): [i]
+            for i in range(36)},
+    'wall': {
+        '1': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 33, 34],
+        'others': 0,
+    },
 }
-TRAIN_MODE = 'wall'

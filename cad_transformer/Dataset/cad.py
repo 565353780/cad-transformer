@@ -2,29 +2,37 @@
 # -*- coding: utf-8 -*-
 
 import os
-import torch
+import queue as Queue
 import random
 import threading
-import numpy as np
-import queue as Queue
-import torchvision.transforms as T
-from PIL import Image
-from tqdm import tqdm
 from glob import glob
 from pdb import set_trace as st
-from torch.utils.data import Dataset, DataLoader
+
+import numpy as np
+import torch
+import torchvision.transforms as T
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 
 from cad_transformer.Config.image_net import IMAGENET_MEAN, IMAGENET_STD
-from cad_transformer.Config.anno_config import TRAIN_CLASS_DICT, TRAIN_MODE
+from cad_transformer.Method.label import mapSemanticLabel
 
 
 class CADDataset(Dataset):
 
-    def __init__(self, split='train', do_norm=True, cfg=None, max_prim=12000):
+    def __init__(self,
+                 split='train',
+                 do_norm=True,
+                 cfg=None,
+                 max_prim=12000,
+                 train_mode='all'):
         self.set_random_seed(123)
         self.root = cfg.root
         self.split = split
         self.max_prim = max_prim
+        self.train_mode = train_mode
+
         if cfg is not None:
             self.clus_num_per_batch = cfg.clus_num_per_batch
             self.nn = cfg.clus_nn
@@ -129,14 +137,7 @@ class CADDataset(Dataset):
         target = adj_node_classes["cat"]
         target = np.array(target, dtype=np.int64)
 
-        remain_idx_list = TRAIN_CLASS_DICT[TRAIN_MODE]
-        if remain_idx_list is not None:
-            remain_mask = np.zeros_like(target, dtype=bool)
-            for remain_idx in remain_idx_list:
-                remain_mask = remain_mask | (target == remain_idx)
-
-            remove_mask = ~remain_mask
-            target[remove_mask] = 0
+        target = mapSemanticLabel(target)
 
         target = torch.from_numpy(target).cuda()
 
