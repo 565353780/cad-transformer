@@ -36,8 +36,9 @@ class Trainer(object):
         self.eval_only = False
         self.test_only = False
 
-        self.model = CADTransformer(
-            self.cfg, len(AnnoList(train_mode).anno_list_all_reverse)).cuda()
+        self.class_num = len(AnnoList(train_mode).anno_list_all_reverse)
+
+        self.model = CADTransformer(self.cfg, self.class_num).cuda()
 
         val_dataset = CADDataset('val', self.cfg.do_norm, self.cfg,
                                  self.cfg.max_prim, self.train_mode)
@@ -168,7 +169,7 @@ class Trainer(object):
         self.optimizer.zero_grad()
 
         seg_pred = self.model(image, xy, nns)
-        seg_pred = seg_pred.contiguous().view(-1, self.cfg.num_class + 1)
+        seg_pred = seg_pred.contiguous().view(-1, self.class_num)
         target = target.view(-1, 1)[:, 0]
 
         loss = self.CE_loss(seg_pred, target)
