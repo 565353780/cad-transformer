@@ -9,6 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
 from cad_transformer.Config.args import parse_args
+from cad_transformer.Config.anno_config import AnnoList
 from cad_transformer.Dataset.cad import CADDataLoader, CADDataset
 from cad_transformer.Method.eval import do_eval
 from cad_transformer.Method.path import createFileFolder, removeFile, renameFile
@@ -35,7 +36,8 @@ class Trainer(object):
         self.eval_only = False
         self.test_only = False
 
-        self.model = CADTransformer(self.cfg).cuda()
+        self.model = CADTransformer(
+            self.cfg, len(AnnoList(train_mode).anno_list_all_reverse)).cuda()
 
         val_dataset = CADDataset('val', self.cfg.do_norm, self.cfg,
                                  self.cfg.max_prim, self.train_mode)
@@ -188,7 +190,7 @@ class Trainer(object):
 
         self.best_F1 = eval_F1
 
-        save_path = './output/' + self.log_folder_name + '/model_best.pth'
+        save_path = './output/' + self.log_folder_name + '_' + self.train_mode + '/model_best.pth'
         self.saveModel(save_path)
         return True
 
@@ -227,7 +229,7 @@ class Trainer(object):
 
             self.epoch += 1
 
-            save_path = './output/' + self.log_folder_name + '/model_last.pth'
+            save_path = './output/' + self.log_folder_name + '_' + self.train_mode + '/model_last.pth'
             self.saveModel(save_path)
 
             self.eval(self.epoch)

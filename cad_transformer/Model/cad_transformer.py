@@ -10,12 +10,12 @@ from cad_transformer.Model.vit import get_vit
 
 class CADTransformer(nn.Module):
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, num_class=36):
         super().__init__()
         self.do_clus = cfg.do_clus
         self.clus_nn = cfg.clus_nn
         self.model_nn = cfg.model.model_nn
-        self.n_c = cfg.num_class + 1
+        self.n_c = num_class
         self.inter_dim = cfg.inter_dim
 
         self.input_embed = InputEmbed(cfg)
