@@ -137,7 +137,7 @@ class CADDataset(Dataset):
         target = adj_node_classes["cat"]
         target = np.array(target, dtype=np.int64)
 
-        target = mapSemanticLabel(target)
+        target = mapSemanticLabel(target, self.train_mode)
 
         target = torch.from_numpy(target).cuda()
 
