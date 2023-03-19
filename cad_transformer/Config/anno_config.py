@@ -88,54 +88,30 @@ bandwidth_dict = {
     30: super_large * 4,  #equipment
 }
 
-
-class RemapDict():
-
-    def __init__(self):
-        self.mapping = {
-            0: 0,
-            3: 1,
-            4: 2,
-            5: 3,
-            6: 4,
-            7: 5,
-            8: 6,
-            9: 7,
-            10: 8,
-            11: 9,
-            12: 10,
-            13: 11,
-            14: 12,
-            15: 13,
-            16: 14,
-            17: 15,
-            18: 16,
-            19: 17,
-            20: 20,
-            21: 21,
-            22: 18,
-            23: 19,
-            24: 22,
-            25: 23,
-            26: 24,
-            27: 25,
-            28: 26,
-            29: 27,
-            30: 28,
-            31: 29,
-            32: 30,
-            33: 35,
-            34: 31,
-            35: 32,
-            1: 33,
-            2: 34
-        }
+TRAIN_CLASS_MAP_DICT = {
+    'all': {str(i): [i]
+            for i in range(36)},
+    'wall': {
+        '1': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 33, 34],
+        'others': 0,
+    },
+}
 
 
 class AnnoList:
 
-    def __init__(self):
-        # all classes
+    def __init__(self, train_mode='all'):
+        self.train_mode = train_mode
+
+        self.updateLabel()
+
+        self.anno_list_all_reverse = {
+            v: k
+            for k, v in self.anno_list_all.items()
+        }
+        return
+
+    def setAll(self):
         self.anno_list_all = {
             'BG': 0,
             'single door': 1,
@@ -174,70 +150,21 @@ class AnnoList:
             'curtain wall': 34,
             'railing': 35,
         }
-        self.anno_list_all_reverse = {
-            v: k
-            for k, v in self.anno_list_all.items()
+        return True
+
+    def setWall(self):
+        self.anno_list_all = {
+            'BG': 0,
+            'wall': 1,
         }
 
-        # foreground(countable) classes
-        self.anno_list_noBG = {
-            'single door': 1,
-            'double door': 2,
-            'sliding door': 3,
-            'folding door': 4,
-            'revolving door': 5,
-            'rolling door': 6,
-            'window': 7,
-            'bay window': 8,
-            'blind window': 9,
-            'opening symbol': 10,
-            'sofa': 11,
-            'bed': 12,
-            'chair': 13,
-            'table': 14,
-            'TV cabinet': 15,
-            'Wardrobe': 16,
-            'cabinet': 17,
-            'gas stove': 18,
-            'sink': 19,
-            'refrigerator': 20,
-            'airconditioner': 21,
-            'bath': 22,
-            'bath tub': 23,
-            'washing machine': 24,  #TODO
-            'squat toilet': 25,
-            'urinal': 26,
-            'toilet': 27,
-            'stairs': 28,
-            'elevator': 29,
-            'escalator': 30,
-        }
-        self.anno_list_noBG_reverse = {
-            v: k
-            for k, v in self.anno_list_noBG.items()
-        }
+    def updateLabel(self):
+        assert self.train_mode in TRAIN_CLASS_MAP_DICT
 
-        # windows and door classes
-        self.anno_list_door_wind = {
-            'single door': 1,
-            'double door': 2,
-            'sliding door': 3,
-            'window': 4,
-            'bay window': 5,
-            'blind window': 6,
-            'opening symbol': 7,
-        }
-        self.anno_list_door_wind_reverse = {
-            v: k
-            for k, v in self.anno_list_door_wind.items()
-        }
-
-
-TRAIN_CLASS_MAP_DICT = {
-    'all': {str(i): [i]
-            for i in range(36)},
-    'wall': {
-        '1': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 33, 34],
-        'others': 0,
-    },
-}
+        if self.train_mode == 'all':
+            return self.setAll()
+        if self.train_mode == 'wall':
+            return self.setWall()
+        print("[ERROR][AnnoList::updateLabel]")
+        print("\t train_mode [" + self.train_mode + "] has not been defined!")
+        return False
