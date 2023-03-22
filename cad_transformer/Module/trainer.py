@@ -31,12 +31,12 @@ class Trainer(object):
     def __init__(self, train_mode='all'):
         self.train_mode = train_mode
 
+        self.class_num = len(AnnoList(self.train_mode).anno_list_all_reverse)
+
         self.args = parse_args()
         self.cfg = update_config(config, self.args)
         self.eval_only = False
         self.test_only = False
-
-        self.class_num = len(AnnoList(self.train_mode).anno_list_all_reverse)
 
         self.model = CADTransformer(self.cfg, self.class_num).cuda()
 
