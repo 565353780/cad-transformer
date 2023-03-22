@@ -97,10 +97,13 @@ class Detector(object):
         return self.renderer.getRenderImage()
 
     def detectDataset(self, print_progress=False):
-        save_result_image_folder_path = './render/' + getCurrentTime() + '/'
+        split = 'test'
+
+        save_result_image_folder_path = './render/detect/' + split + '/' + getCurrentTime(
+        ) + '/'
         os.makedirs(save_result_image_folder_path)
 
-        dataset = CADDataset(split='test',
+        dataset = CADDataset(split=split,
                              do_norm=self.cfg.do_norm,
                              cfg=self.cfg,
                              max_prim=self.cfg.max_prim)
