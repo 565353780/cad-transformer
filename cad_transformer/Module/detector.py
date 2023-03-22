@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from svg_render.Module.renderer import Renderer
 
-from cad_transformer.Config.anno_config import AnnoList
+from cad_transformer.Config.anno_config import TRAIN_CLASS_MAP_DICT, AnnoList
 from cad_transformer.Config.args import parse_args
 from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
@@ -57,9 +57,8 @@ class Detector(object):
         self.text_size = 1
         self.text_line_width = 1
         self.print_progress = False
-        self.selected_semantic_idx_list = [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 33, 34
-        ]
+        self.selected_semantic_idx_list = TRAIN_CLASS_MAP_DICT[
+            self.train_mode]['1']
         self.wait_key = 0
         self.window_name = '[Renderer][' + self.render_mode + ']'
         return
