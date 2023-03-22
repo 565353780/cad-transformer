@@ -42,7 +42,7 @@ def getMetricStr(result, target, train_mode='all'):
     if class_num > 0:
         metric_str += '_'
     metric_str += 'total_' + str(int(f1 * 100) / 100.0)
-    return
+    return metric_str
 
 
 def do_eval(model, loaders, summary_writer, step, train_mode='all'):
