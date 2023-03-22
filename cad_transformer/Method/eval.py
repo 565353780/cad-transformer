@@ -10,6 +10,41 @@ torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
 
+def getMetricStr(result, target, train_mode='all'):
+    metric_str = ''
+
+    anno_list = AnnoList(train_mode).anno_list_all_reverse
+    class_num = len(anno_list)
+
+    cnt_prd, cnt_gt, cnt_tp = \
+        [[0 for _ in range(class_num)] for _ in range(3)]
+    for prd, gt in zip(result, target):
+        cnt_prd[prd] += 1
+        cnt_gt[gt] += 1
+        if prd == gt:
+            cnt_tp[gt] += 1
+
+    for cls_id in range(class_num):
+        class_name = anno_list[cls_id]
+        precision = cnt_tp[cls_id] / (cnt_prd[cls_id] + 1e-4)
+        recall = cnt_tp[cls_id] / (cnt_gt[cls_id] + 1e-4)
+        f1 = (2 * precision * recall) / (precision + recall + 1e-4)
+        if cls_id > 0:
+            metric_str += '_'
+        metric_str += class_name + '_' + str(int(f1 * 100) / 100.0)
+
+    tp = sum(cnt_tp[1:])
+    gt = sum(cnt_gt[1:])
+    pred = sum(cnt_prd[1:])
+    precision = tp / pred
+    recall = tp / gt
+    f1 = (2 * precision * recall) / (precision + recall + 1e-4)
+    if class_num > 0:
+        metric_str += '_'
+    metric_str += 'total_' + str(int(f1 * 100) / 100.0)
+    return
+
+
 def do_eval(model, loaders, summary_writer, step, train_mode='all'):
     print("[INFO][eval::do_eval]")
     print("\t start eval...")
@@ -25,8 +60,6 @@ def do_eval(model, loaders, summary_writer, step, train_mode='all'):
                 seg_pred = seg_pred.contiguous().view(-1, class_num)
                 target = target.view(-1, 1)[:, 0]
                 pred_choice = seg_pred.data.max(1)[1]
-                # Squeeze
-                xy = xy.squeeze(0)
 
                 for prd, gt in zip(pred_choice, target):
                     cnt_prd[prd] += 1

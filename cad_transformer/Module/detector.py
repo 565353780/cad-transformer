@@ -21,6 +21,8 @@ from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
 from cad_transformer.Config.image_net import IMAGENET_MEAN, IMAGENET_STD
 from cad_transformer.Method.time import getCurrentTime
+from cad_transformer.Method.label import mapSemanticLabel
+from cad_transformer.Method.eval import getMetricStr
 from cad_transformer.Dataset.cad import CADDataset
 from cad_transformer.Model.cad_transformer import CADTransformer
 
@@ -93,7 +95,6 @@ class Detector(object):
                                  self.text_size, self.text_line_width,
                                  self.print_progress,
                                  self.selected_semantic_idx_list, result)
-        self.renderer.show(self.wait_key, self.window_name)
         return self.renderer.getRenderImage()
 
     def detectDataset(self, print_progress=False):
@@ -135,11 +136,18 @@ class Detector(object):
             nns = torch.from_numpy(np.array(
                 nns, dtype=np.int64)).cuda().unsqueeze(0)
 
+            target = adj_node_classes["cat"]
+            target = np.array(target, dtype=np.int64).reshape(-1)
+
+            target = mapSemanticLabel(target, self.train_mode)
+
             result = self.detect(image, xy, nns)
 
             result_image = self.getResultImage(svg_file_path, result)
+            #  self.renderer.show(self.wait_key, self.window_name)
 
-            cv2.imwrite(save_result_image_folder_path + str(data_idx) + '.png',
-                        result_image)
-            exit()
+            metric_str = getMetricStr(result, target, self.train_mode)
+            cv2.imwrite(
+                save_result_image_folder_path + str(data_idx) + '_' +
+                metric_str + '.png', result_image)
         return True
