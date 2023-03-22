@@ -26,12 +26,14 @@ class CADDataset(Dataset):
                  do_norm=True,
                  cfg=None,
                  max_prim=12000,
-                 train_mode='all'):
+                 train_mode='all',
+                 load_num_max=None):
         self.set_random_seed(123)
         self.root = cfg.root
         self.split = split
         self.max_prim = max_prim
         self.train_mode = train_mode
+        self.load_num_max = load_num_max
 
         if cfg is not None:
             self.clus_num_per_batch = cfg.clus_num_per_batch
@@ -101,8 +103,9 @@ class CADDataset(Dataset):
         image_path_list_new = []
         for idx, ann_path in tqdm(enumerate(self.anno_path_list),
                                   total=len(self.anno_path_list)):
-            #  if len(anno_path_list_new) > 10:
-            #  break
+            if self.load_num_max is not None:
+                if len(anno_path_list_new) >= self.load_num_max:
+                    break
             adj_node_classes = np.load(ann_path, \
                                     allow_pickle=True).item()
             target = adj_node_classes["cat"]
