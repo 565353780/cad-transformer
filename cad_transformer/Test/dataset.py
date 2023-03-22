@@ -9,7 +9,6 @@ import os
 import cv2
 import numpy as np
 import torchvision.transforms as T
-from PIL import Image
 from tqdm import tqdm
 
 from svg_render.Module.renderer import Renderer
@@ -24,7 +23,7 @@ from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Dataset.cad import CADDataset
 
 
-def test():
+def testBySplit(split):
     train_mode = 'wall'
     load_num_max = 20
 
@@ -42,7 +41,7 @@ def test():
     args = parse_args()
     cfg = update_config(config, args)
 
-    dataset = CADDataset(split='train',
+    dataset = CADDataset(split=split,
                          do_norm=cfg.do_norm,
                          cfg=cfg,
                          max_prim=cfg.max_prim,
@@ -52,7 +51,8 @@ def test():
     transform.append(T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD))
     transform = T.Compose(transform)
 
-    save_result_image_folder_path = './render_train/' + getCurrentTime() + '/'
+    save_result_image_folder_path = './render/test/' + split + '/' + getCurrentTime(
+    ) + '/'
     os.makedirs(save_result_image_folder_path)
 
     print("[INFO][dataset::test]")
@@ -84,4 +84,11 @@ def test():
 
         cv2.imwrite(save_result_image_folder_path + str(data_idx) + '.png',
                     result_image)
+    return True
+
+
+def test():
+    testBySplit('train')
+    testBySplit('test')
+    testBySplit('val')
     return True
