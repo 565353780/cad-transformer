@@ -26,6 +26,7 @@ from cad_transformer.Dataset.cad import CADDataset
 
 def test():
     train_mode = 'wall'
+    load_num_max = 20
 
     renderer = Renderer(4000, 4000, 50, 2560, 1440)
     render_mode = 'type+semantic+selected_semantic'
@@ -44,7 +45,8 @@ def test():
     dataset = CADDataset(split='train',
                          do_norm=cfg.do_norm,
                          cfg=cfg,
-                         max_prim=cfg.max_prim)
+                         max_prim=cfg.max_prim,
+                         load_num_max=load_num_max)
 
     transform = [T.ToTensor()]
     transform.append(T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD))
@@ -53,6 +55,8 @@ def test():
     save_result_image_folder_path = './render_train/' + getCurrentTime() + '/'
     os.makedirs(save_result_image_folder_path)
 
+    print("[INFO][dataset::test]")
+    print("\t start save training dataset visual images...")
     for data_idx in tqdm(range(len(dataset))):
         img_path = dataset.image_path_list[data_idx]
         ann_path = dataset.anno_path_list[data_idx]
