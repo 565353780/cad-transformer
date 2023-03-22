@@ -30,10 +30,6 @@ torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
 
-def getRenderer():
-    return Renderer
-
-
 class Detector(object):
 
     def __init__(self, train_mode='all'):

@@ -36,7 +36,6 @@ class Trainer(object):
         self.args = parse_args()
         self.cfg = update_config(config, self.args)
         self.eval_only = False
-        self.test_only = False
 
         self.model = CADTransformer(self.cfg, self.class_num).cuda()
 
@@ -45,15 +44,6 @@ class Trainer(object):
         self.val_dataloader = CADDataLoader(
             0,
             dataset=val_dataset,
-            batch_size=self.cfg.test_batch_size,
-            shuffle=False,
-            num_workers=self.cfg.WORKERS,
-            drop_last=False)
-        test_dataset = CADDataset('test', self.cfg.do_norm, self.cfg,
-                                  self.cfg.max_prim, self.train_mode)
-        self.test_dataloader = CADDataLoader(
-            0,
-            dataset=test_dataset,
             batch_size=self.cfg.test_batch_size,
             shuffle=False,
             num_workers=self.cfg.WORKERS,
@@ -198,15 +188,8 @@ class Trainer(object):
     def train(self, print_progress=False):
         self.model.train()
 
-        #  torch.multiprocessing.set_start_method('spawn', force=True)
-
         if self.eval_only:
             do_eval(self.model, self.val_dataloader, self.summary_writer,
-                    self.step, self.train_mode)
-            return True
-
-        if self.test_only:
-            do_eval(self.model, self.test_dataloader, self.summary_writer,
                     self.step, self.train_mode)
             return True
 
