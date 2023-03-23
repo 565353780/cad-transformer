@@ -6,24 +6,24 @@ import sys
 sys.path.append("../svg-render")
 
 import os
+
 import cv2
-import torch
 import numpy as np
+import torch
 import torchvision.transforms as T
 from PIL import Image
-from tqdm import tqdm
-
 from svg_render.Module.renderer import Renderer
+from tqdm import tqdm
 
 from cad_transformer.Config.anno_config import TRAIN_CLASS_MAP_DICT, AnnoList
 from cad_transformer.Config.args import parse_args
 from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
 from cad_transformer.Config.image_net import IMAGENET_MEAN, IMAGENET_STD
-from cad_transformer.Method.time import getCurrentTime
-from cad_transformer.Method.label import mapSemanticLabel
-from cad_transformer.Method.eval import getMetricStr
 from cad_transformer.Dataset.cad import CADDataset
+from cad_transformer.Method.eval import getMetricStr
+from cad_transformer.Method.label import mapSemanticLabel
+from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Model.cad_transformer import CADTransformer
 
 torch.backends.cudnn.benchmark = True
@@ -92,10 +92,10 @@ class Detector(object):
                                  self.selected_semantic_idx_list, result)
         return self.renderer.getRenderImage()
 
-    def detectDataset(self, print_progress=False):
-        load_num_max = 20
-        split = 'train'
-
+    def detectDataset(self,
+                      split='test',
+                      load_num_max=None,
+                      print_progress=False):
         save_result_image_folder_path = './render/detect/' + split + '/' + getCurrentTime(
         ) + '/'
         os.makedirs(save_result_image_folder_path)
@@ -147,4 +147,11 @@ class Detector(object):
             cv2.imwrite(
                 save_result_image_folder_path + str(data_idx) + '_' +
                 metric_str + '.png', result_image)
+        return True
+
+    def detectAllDataset(self, print_progress=False):
+        load_num_max = 20
+        self.detectDataset('train', load_num_max, print_progress)
+        self.detectDataset('test', load_num_max, print_progress)
+        self.detectDataset('val', load_num_max, print_progress)
         return True
