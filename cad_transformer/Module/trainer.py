@@ -39,7 +39,7 @@ class Trainer(object):
 
         self.model = CADTransformer(self.cfg, self.class_num).cuda()
 
-        val_dataset = CADDataset('val', self.cfg.do_norm, self.cfg,
+        val_dataset = CADDataset('test', self.cfg.do_norm, self.cfg,
                                  self.cfg.max_prim, self.train_mode)
         self.val_dataloader = CADDataLoader(
             0,
