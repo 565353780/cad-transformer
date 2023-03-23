@@ -34,8 +34,8 @@ def getMetricStr(result, target, train_mode='all'):
         metric_str += class_name + '_' + str(int(f1 * 100) / 100.0)
 
     tp = sum(cnt_tp[1:])
-    gt = sum(cnt_gt[1:])
-    pred = sum(cnt_prd[1:])
+    gt = sum(cnt_gt[1:]) + 1e-4
+    pred = sum(cnt_prd[1:]) + 1e-4
     precision = tp / pred
     recall = tp / gt
     f1 = (2 * precision * recall) / (precision + recall + 1e-4)
@@ -77,8 +77,8 @@ def do_eval(model, loaders, summary_writer, step, train_mode='all'):
                 summary_writer.add_scalar("Recall/" + anno_list[cls_id],
                                           recall, step)
             tp = sum(cnt_tp[1:])
-            gt = sum(cnt_gt[1:])
-            pred = sum(cnt_prd[1:])
+            gt = sum(cnt_gt[1:]) + 1e-4
+            pred = sum(cnt_prd[1:]) + 1e-4
             precision = tp / pred
             recall = tp / gt
             f1 = (2 * precision * recall) / (precision + recall + 1e-4)
