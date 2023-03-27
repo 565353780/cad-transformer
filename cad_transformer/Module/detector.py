@@ -234,14 +234,44 @@ class Detector(object):
                 metric_str + '.png', result_image)
         return True
 
-    def detectAllDataset(self, print_progress=False):
-        load_num_max = 20
+    def detectAllDataset(self, load_num_max=20, print_progress=False):
+        self.detectDataset('train', load_num_max, print_progress)
+        self.detectDataset('test', load_num_max, print_progress)
+        self.detectDataset('val', load_num_max, print_progress)
+        return True
 
-        #  self.detectDataset('train', load_num_max, print_progress)
-        #  self.detectDataset('test', load_num_max, print_progress)
-        #  self.detectDataset('val', load_num_max, print_progress)
-
+    def detectAllDatasetBySVGFile(self, load_num_max=20, print_progress=False):
         self.detectDatasetBySVGFile('train', load_num_max, print_progress)
         self.detectDatasetBySVGFile('test', load_num_max, print_progress)
         self.detectDatasetBySVGFile('val', load_num_max, print_progress)
+        return True
+
+    def detectDXFFolder(self, dxf_folder_path, print_progress=False):
+        save_result_image_folder_path = './render/detect/dxf/' + getCurrentTime(
+        ) + '/'
+        os.makedirs(save_result_image_folder_path)
+
+        dxf_filename_list = os.listdir(dxf_folder_path)
+
+        for_data = range(len(dxf_filename_list))
+        if print_progress:
+            print("[INFO][Detector::detectDXFFolder]")
+            print("\t start detect dxf files...")
+            for_data = tqdm(for_data)
+        for data_idx in for_data:
+            dxf_filename = dxf_filename_list[data_idx]
+            if dxf_filename[-4:] != '.dxf':
+                continue
+
+            dxf_file_path = dxf_folder_path + dxf_filename
+
+            result, target = self.detectDXFFile(dxf_file_path)
+
+            result_image = self.getResultImage('./tmp/input.svg', result)
+            #  self.renderer.show(self.wait_key, self.window_name)
+
+            metric_str = getMetricStr(result, target, self.train_mode)
+            cv2.imwrite(
+                save_result_image_folder_path + str(data_idx) + '_' +
+                metric_str + '.png', result_image)
         return True
