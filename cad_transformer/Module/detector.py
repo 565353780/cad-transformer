@@ -14,6 +14,7 @@ import torchvision.transforms as T
 from PIL import Image
 from svg_render.Module.renderer import Renderer
 from tqdm import tqdm
+from time import time
 
 from cad_transformer.Pre.utils_dataset import svg2png
 from cad_transformer.Config.anno_config import TRAIN_CLASS_MAP_DICT, AnnoList
@@ -27,6 +28,7 @@ from cad_transformer.Method.label import mapSemanticLabel
 from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Method.path import createFileFolder, removeFile
 from cad_transformer.Method.graph import getGraphFromSVG
+from cad_transformer.Method.dxf import transDXFToSVG
 from cad_transformer.Model.cad_transformer import CADTransformer
 
 torch.backends.cudnn.benchmark = True
@@ -87,14 +89,14 @@ class Detector(object):
         del pred_choice
         return result
 
-    def detectSVGFile(self, svg_file_path):
+    def detectSVGFile(self, svg_file_path, scale=7):
         assert os.path.exists(svg_file_path)
 
-        tmp_png_file_path = './tmp/image.png'
+        tmp_png_file_path = './tmp/input.png'
         createFileFolder(tmp_png_file_path)
         removeFile(tmp_png_file_path)
 
-        svg2png(svg_file_path, tmp_png_file_path, scale=7)
+        svg2png(svg_file_path, tmp_png_file_path, scale=scale)
         assert os.path.exists(tmp_png_file_path)
 
         image = Image.open(tmp_png_file_path).convert("RGB")
@@ -117,6 +119,18 @@ class Detector(object):
         target = mapSemanticLabel(target, self.train_mode)
 
         return self.detect(image, xy, nns), target
+
+    def detectDXFFile(self, dxf_file_path, scale=7):
+        assert os.path.exists(dxf_file_path)
+
+        tmp_svg_file_path = './tmp/input.svg'
+        createFileFolder(tmp_svg_file_path)
+        removeFile(tmp_svg_file_path)
+
+        transDXFToSVG(dxf_file_path, tmp_svg_file_path)
+        assert os.path.exists(tmp_svg_file_path)
+
+        return self.detectSVGFile(tmp_svg_file_path, scale)
 
     def getResultImage(self, svg_file_path, result):
         self.renderer.renderFile(svg_file_path, self.render_mode,
