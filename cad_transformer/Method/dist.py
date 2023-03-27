@@ -21,12 +21,12 @@ def get_nn(segments, max_degree=4, avoid_self_idx=False, print_progress=False):
 
     nns_list = []
 
-    for_data = enumerate(segments)
+    for_data = segments
     if print_progress:
         print("[INFO][dist::get_nn]")
         print("\t start compute nearest neighbors...")
         for_data = tqdm(for_data)
-    for i, seg in for_data:
+    for i, seg in enumerate(for_data):
         i_start = seg[:2].unsqueeze(0).unsqueeze(0)
         i_end = seg[2:].unsqueeze(0).unsqueeze(0)
 

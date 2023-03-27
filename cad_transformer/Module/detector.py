@@ -51,6 +51,8 @@ class Detector(object):
         transform.append(T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD))
         self.transform = T.Compose(transform)
 
+        self.scale = 7
+
         self.renderer = Renderer(4000, 4000, 50, 2560, 1440)
         self.render_mode = 'type+semantic+selected_semantic+custom_semantic'
         self.line_width = 3
@@ -89,14 +91,20 @@ class Detector(object):
         del pred_choice
         return result
 
-    def detectSVGFile(self, svg_file_path, scale=7, print_progress=False):
+    def detectSVGFile(self, svg_file_path, print_progress=False):
         assert os.path.exists(svg_file_path)
 
         tmp_png_file_path = './tmp/input.png'
         createFileFolder(tmp_png_file_path)
         removeFile(tmp_png_file_path)
 
-        svg2png(svg_file_path, tmp_png_file_path, scale=scale)
+        if print_progress:
+            print("[INFO][Detector::detectDVGFile]")
+            print("\t start svg2png...")
+        svg2png(svg_file_path, tmp_png_file_path, scale=self.scale)
+        if print_progress:
+            print("Finished!")
+
         assert os.path.exists(tmp_png_file_path)
 
         image = Image.open(tmp_png_file_path).convert("RGB")
@@ -121,18 +129,23 @@ class Detector(object):
 
         return self.detect(image, xy, nns), target
 
-    def detectDXFFile(self, dxf_file_path, scale=7, print_progress=False):
+    def detectDXFFile(self, dxf_file_path, print_progress=False):
         assert os.path.exists(dxf_file_path)
 
         tmp_svg_file_path = './tmp/input.svg'
         createFileFolder(tmp_svg_file_path)
         removeFile(tmp_svg_file_path)
 
+        if print_progress:
+            print("[INFO][Detector::detectDXFFile]")
+            print("\t start transDXFToSVG...")
         transDXFToSVG(dxf_file_path, tmp_svg_file_path)
+        if print_progress:
+            print("Finished!")
+
         assert os.path.exists(tmp_svg_file_path)
 
-        result, _ = self.detectSVGFile(tmp_svg_file_path, scale,
-                                       print_progress)
+        result, _ = self.detectSVGFile(tmp_svg_file_path, print_progress)
         return result
 
     def getResultImage(self, svg_file_path, result):
@@ -268,8 +281,7 @@ class Detector(object):
 
             dxf_file_path = dxf_folder_path + dxf_filename
 
-            result = self.detectDXFFile(dxf_file_path,
-                                        print_progress=print_progress)
+            result = self.detectDXFFile(dxf_file_path, print_progress)
 
             result_image = self.getResultImage('./tmp/input.svg', result)
             #  self.renderer.show(self.wait_key, self.window_name)
