@@ -89,7 +89,7 @@ class Detector(object):
         del pred_choice
         return result
 
-    def detectSVGFile(self, svg_file_path, scale=7):
+    def detectSVGFile(self, svg_file_path, scale=7, print_progress=False):
         assert os.path.exists(svg_file_path)
 
         tmp_png_file_path = './tmp/input.png'
@@ -103,7 +103,8 @@ class Detector(object):
         image = image.resize((self.cfg.img_size, self.cfg.img_size))
         image = self.transform(image).cuda().unsqueeze(0)
 
-        data_gcn = getGraphFromSVG(svg_file_path)
+        data_gcn = getGraphFromSVG(svg_file_path,
+                                   print_progress=print_progress)
 
         center = data_gcn['ct_norm']
         xy = torch.from_numpy(np.array(center,
@@ -120,7 +121,7 @@ class Detector(object):
 
         return self.detect(image, xy, nns), target
 
-    def detectDXFFile(self, dxf_file_path, scale=7):
+    def detectDXFFile(self, dxf_file_path, scale=7, print_progress=False):
         assert os.path.exists(dxf_file_path)
 
         tmp_svg_file_path = './tmp/input.svg'
@@ -130,7 +131,9 @@ class Detector(object):
         transDXFToSVG(dxf_file_path, tmp_svg_file_path)
         assert os.path.exists(tmp_svg_file_path)
 
-        return self.detectSVGFile(tmp_svg_file_path, scale)
+        result, _ = self.detectSVGFile(tmp_svg_file_path, scale,
+                                       print_progress)
+        return result
 
     def getResultImage(self, svg_file_path, result):
         self.renderer.renderFile(svg_file_path, self.render_mode,
@@ -265,13 +268,12 @@ class Detector(object):
 
             dxf_file_path = dxf_folder_path + dxf_filename
 
-            result, target = self.detectDXFFile(dxf_file_path)
+            result = self.detectDXFFile(dxf_file_path,
+                                        print_progress=print_progress)
 
             result_image = self.getResultImage('./tmp/input.svg', result)
             #  self.renderer.show(self.wait_key, self.window_name)
 
-            metric_str = getMetricStr(result, target, self.train_mode)
-            cv2.imwrite(
-                save_result_image_folder_path + str(data_idx) + '_' +
-                metric_str + '.png', result_image)
+            cv2.imwrite(save_result_image_folder_path + str(data_idx) + '.png',
+                        result_image)
         return True

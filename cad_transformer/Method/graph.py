@@ -4,6 +4,7 @@
 import os
 import xml.etree.ElementTree as ET
 from copy import deepcopy
+from tqdm import tqdm
 
 import numpy as np
 from bs4 import BeautifulSoup
@@ -68,7 +69,10 @@ def visualize_graph(root, centers, nns, vis_path):
     return True
 
 
-def getGraphFromSVG(svg_file_path, max_degree=128, avoid_self_idx=False):
+def getGraphFromSVG(svg_file_path,
+                    max_degree=128,
+                    avoid_self_idx=False,
+                    print_progress=False):
     assert os.path.exists(svg_file_path)
 
     tree = ET.parse(svg_file_path)
@@ -87,6 +91,19 @@ def getGraphFromSVG(svg_file_path, max_degree=128, avoid_self_idx=False):
     classes = []
     instances = []
     #  starts_ends = []
+
+    if print_progress:
+        print("[INFO][graph::getGraphFromSVG]")
+        print("\t start generate graph from svg data...")
+        total_num = 0
+
+        for g in root.iter(ns + 'g'):
+            total_num += len(list(g.iter(ns + 'path')))
+            total_num += len(list(g.iter(ns + 'circle')))
+            total_num += len(list(g.iter(ns + 'ellipse')))
+
+        pbar = tqdm(total=total_num)
+
     for g in root.iter(ns + 'g'):
         # path
         for path in g.iter(ns + 'path'):
@@ -115,6 +132,10 @@ def getGraphFromSVG(svg_file_path, max_degree=128, avoid_self_idx=False):
                 instances.append([int(path.attrib['instance-id'])])
             else:
                 instances.append([-1])
+
+            if print_progress:
+                pbar.update(1)
+
         # circle
         for circle in g.iter(ns + 'circle'):
             cx = float(circle.attrib['cx'])
@@ -135,6 +156,10 @@ def getGraphFromSVG(svg_file_path, max_degree=128, avoid_self_idx=False):
                 instances.append([int(circle.attrib['instance-id'])])
             else:
                 instances.append([-1])
+
+            if print_progress:
+                pbar.update(1)
+
         # ellipse
         for ellipse in g.iter(ns + 'ellipse'):
             cx = float(ellipse.attrib['cx'])
@@ -155,10 +180,17 @@ def getGraphFromSVG(svg_file_path, max_degree=128, avoid_self_idx=False):
             else:
                 instances.append([-1])
 
+            if print_progress:
+                pbar.update(1)
+
+    if print_progress:
+        pbar.close()
+
     segments = np.array(segments)
     assert segments.shape[0] > 1
 
-    nns = get_nn(deepcopy(segments), max_degree, avoid_self_idx)
+    nns = get_nn(deepcopy(segments), max_degree, avoid_self_idx,
+                 print_progress)
 
     centers_norm = []
     for c in centers:

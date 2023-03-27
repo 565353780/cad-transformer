@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import torch
+from tqdm import tqdm
 
 
 def square_distance(src, dst):
@@ -10,7 +11,7 @@ def square_distance(src, dst):
     return torch.sum((src[:, :, None] - dst[:, None])**2, dim=-1)
 
 
-def get_nn(segments, max_degree=4, avoid_self_idx=False):
+def get_nn(segments, max_degree=4, avoid_self_idx=False, print_progress=False):
     '''Calculate the neighbors of each point
     '''
     segments = torch.Tensor(segments)
@@ -19,7 +20,13 @@ def get_nn(segments, max_degree=4, avoid_self_idx=False):
     p_end = segments[:, 2:].unsqueeze(0)
 
     nns_list = []
-    for i, seg in enumerate(segments):
+
+    for_data = enumerate(segments)
+    if print_progress:
+        print("[INFO][dist::get_nn]")
+        print("\t start compute nearest neighbors...")
+        for_data = tqdm(for_data)
+    for i, seg in for_data:
         i_start = seg[:2].unsqueeze(0).unsqueeze(0)
         i_end = seg[2:].unsqueeze(0).unsqueeze(0)
 
