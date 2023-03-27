@@ -239,7 +239,7 @@ class Detector(object):
                                              '/svg/').replace('.png', '.svg')
             assert os.path.exists(svg_file_path)
 
-            result, target = self.detectSVGFile(svg_file_path)
+            result, target = self.detectSVGFile(svg_file_path, print_progress)
 
             result_image = self.getResultImage(svg_file_path, result)
             #  self.renderer.show(self.wait_key, self.window_name)
