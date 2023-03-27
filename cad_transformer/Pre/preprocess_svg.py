@@ -11,7 +11,7 @@ from functools import partial
 from multiprocessing import Pool
 
 from cad_transformer.Pre.utils_dataset import init_worker
-from cad_transformer.Method.dist import svg2graph
+from cad_transformer.Method.graph import svg2graph
 
 
 def parse_args():
