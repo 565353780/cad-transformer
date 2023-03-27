@@ -361,7 +361,9 @@ def svg2png(svg_path, png_path, background_color="white", scale=1):
     command = "cairosvg {} -o {} -b {} -s {}".format(svg_path, png_path,
                                                      background_color, scale)
     os.system(command)
+    #FIXME: why sleep?
     time.sleep(0.03)
+    return True
 
 
 def init_worker():
