@@ -5,8 +5,8 @@ from cad_transformer.Module.trainer import Trainer
 
 
 def demo():
-    model_file_path = './output/20230320_05:30:02_wall/model_last.pth'
-    model_file_path = ''
+    model_file_path = './output/20230322_16:04:51_wall/model_last.pth'
+    #  model_file_path = ''
     train_mode = 'wall'
     load_model_only = False
     print_progress = True
