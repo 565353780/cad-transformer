@@ -15,6 +15,7 @@ from PIL import Image
 from svg_render.Module.renderer import Renderer
 from tqdm import tqdm
 
+from cad_transformer.Pre.utils_dataset import svg2png
 from cad_transformer.Config.anno_config import TRAIN_CLASS_MAP_DICT, AnnoList
 from cad_transformer.Config.args import parse_args
 from cad_transformer.Config.default import _C as config
@@ -24,6 +25,8 @@ from cad_transformer.Dataset.cad import CADDataset
 from cad_transformer.Method.eval import getMetricStr
 from cad_transformer.Method.label import mapSemanticLabel
 from cad_transformer.Method.time import getCurrentTime
+from cad_transformer.Method.path import createFileFolder, removeFile
+from cad_transformer.Method.graph import getGraphFromSVG
 from cad_transformer.Model.cad_transformer import CADTransformer
 
 torch.backends.cudnn.benchmark = True
@@ -83,6 +86,37 @@ class Detector(object):
         del seg_pred
         del pred_choice
         return result
+
+    def detectSVGFile(self, svg_file_path):
+        assert os.path.exists(svg_file_path)
+
+        tmp_png_file_path = './tmp/image.png'
+        createFileFolder(tmp_png_file_path)
+        removeFile(tmp_png_file_path)
+
+        svg2png(svg_file_path, tmp_png_file_path, scale=7)
+        assert os.path.exists(tmp_png_file_path)
+
+        image = Image.open(tmp_png_file_path).convert("RGB")
+        image = image.resize((self.cfg.img_size, self.cfg.img_size))
+        image = self.transform(image).cuda().unsqueeze(0)
+
+        data_gcn = getGraphFromSVG(svg_file_path)
+
+        center = data_gcn['ct_norm']
+        xy = torch.from_numpy(np.array(center,
+                                       dtype=np.float32)).cuda().unsqueeze(0)
+
+        nns = data_gcn['nns']
+        nns = torch.from_numpy(np.array(nns,
+                                        dtype=np.int64)).cuda().unsqueeze(0)
+
+        target = data_gcn["cat"]
+        target = np.array(target, dtype=np.int64).reshape(-1)
+
+        target = mapSemanticLabel(target, self.train_mode)
+
+        return self.detect(image, xy, nns), target
 
     def getResultImage(self, svg_file_path, result):
         self.renderer.renderFile(svg_file_path, self.render_mode,
@@ -149,9 +183,51 @@ class Detector(object):
                 metric_str + '.png', result_image)
         return True
 
+    def detectDatasetBySVGFile(self,
+                               split='test',
+                               load_num_max=None,
+                               print_progress=False):
+        save_result_image_folder_path = './render/detect/' + split + '/' + getCurrentTime(
+        ) + '/'
+        os.makedirs(save_result_image_folder_path)
+
+        dataset = CADDataset(split, self.cfg.do_norm, self.cfg,
+                             self.cfg.max_prim, self.train_mode, load_num_max)
+
+        for_data = range(len(dataset))
+        if print_progress:
+            print("[INFO][Detector::detectDataset]")
+            print("\t start detect...")
+            for_data = tqdm(for_data)
+        for data_idx in for_data:
+            img_path = dataset.image_path_list[data_idx]
+            ann_path = dataset.anno_path_list[data_idx]
+            assert os.path.basename(img_path).split(".")[0] == \
+                os.path.basename(ann_path).split(".")[0]
+
+            svg_file_path = img_path.replace('/png/',
+                                             '/svg/').replace('.png', '.svg')
+            assert os.path.exists(svg_file_path)
+
+            result, target = self.detectSVGFile(svg_file_path)
+
+            result_image = self.getResultImage(svg_file_path, result)
+            #  self.renderer.show(self.wait_key, self.window_name)
+
+            metric_str = getMetricStr(result, target, self.train_mode)
+            cv2.imwrite(
+                save_result_image_folder_path + str(data_idx) + '_' +
+                metric_str + '.png', result_image)
+        return True
+
     def detectAllDataset(self, print_progress=False):
         load_num_max = 20
-        self.detectDataset('train', load_num_max, print_progress)
-        self.detectDataset('test', load_num_max, print_progress)
-        self.detectDataset('val', load_num_max, print_progress)
+
+        #  self.detectDataset('train', load_num_max, print_progress)
+        #  self.detectDataset('test', load_num_max, print_progress)
+        #  self.detectDataset('val', load_num_max, print_progress)
+
+        self.detectDatasetBySVGFile('train', load_num_max, print_progress)
+        self.detectDatasetBySVGFile('test', load_num_max, print_progress)
+        self.detectDatasetBySVGFile('val', load_num_max, print_progress)
         return True

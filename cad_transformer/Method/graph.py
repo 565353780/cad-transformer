@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import os
-import numpy as np
 import xml.etree.ElementTree as ET
 from copy import deepcopy
+
+import numpy as np
 from bs4 import BeautifulSoup
 from svgpathtools import parse_path
 
@@ -67,14 +68,10 @@ def visualize_graph(root, centers, nns, vis_path):
     return True
 
 
-def svg2graph(svg_path,
-              output_dir,
-              max_degree,
-              visualize,
-              avoid_self_idx=False):
-    '''Construct the graph of each drawing
-    '''
-    tree = ET.parse(svg_path)
+def getGraphFromSVG(svg_file_path, max_degree=128, avoid_self_idx=False):
+    assert os.path.exists(svg_file_path)
+
+    tree = ET.parse(svg_file_path)
     root = tree.getroot()
     ns = root.tag[:-3]
     minx, miny, width, height = [
@@ -97,7 +94,7 @@ def svg2graph(svg_path,
                 path_repre = parse_path(path.attrib['d'])
             except Exception as _:
                 raise RuntimeError("Parse path failed!{}, {}".format(
-                    svg_path, path.attrib['d']))
+                    svg_file_path, path.attrib['d']))
             start = path_repre.point(0)
             end = path_repre.point(1)
             segments.append([start.real, start.imag, end.real, end.imag])
@@ -159,17 +156,9 @@ def svg2graph(svg_path,
                 instances.append([-1])
 
     segments = np.array(segments)
+    assert segments.shape[0] > 1
+
     nns = get_nn(deepcopy(segments), max_degree, avoid_self_idx)
-    if segments.shape[0] < 2:
-        print('Warning: too few segments')
-        return
-
-    basename = os.path.basename(svg_path)
-
-    if visualize:
-        vis_path = os.path.join(output_dir, './visualize/', basename)
-        print(f"vis to {vis_path}")
-        visualize_graph(root, centers, nns, vis_path)
 
     centers_norm = []
     for c in centers:
@@ -183,6 +172,27 @@ def svg2graph(svg_path,
         "nns": nns,
         "inst": instances
     }
+    return data_gcn
+
+
+def svg2graph(svg_path,
+              output_dir,
+              max_degree,
+              visualize,
+              avoid_self_idx=False):
+    '''Construct the graph of each drawing
+    '''
+    data_gcn = getGraphFromSVG(svg_path, max_degree, avoid_self_idx)
+
+    basename = os.path.basename(svg_path)
+
+    if visualize:
+        tree = ET.parse(svg_path)
+        root = tree.getroot()
+        vis_path = os.path.join(output_dir, './visualize/', basename)
+        print(f"vis to {vis_path}")
+        visualize_graph(root, data_gcn['ct'], data_gcn['nns'], vis_path)
+
     npy_path = os.path.join(output_dir, basename.replace(".svg", ".npy"))
     np.save(npy_path, data_gcn)
     return True
