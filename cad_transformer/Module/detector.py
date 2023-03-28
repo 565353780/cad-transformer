@@ -4,6 +4,7 @@
 import sys
 
 sys.path.append("../svg-render")
+sys.path.append("../autocad-manage")
 
 import os
 
@@ -12,9 +13,11 @@ import numpy as np
 import torch
 import torchvision.transforms as T
 from PIL import Image
-from svg_render.Module.renderer import Renderer
 from tqdm import tqdm
-from time import time
+
+from svg_render.Module.renderer import Renderer
+
+from autocad_manage.Module.dxf_loader import DXFLoader
 
 from cad_transformer.Pre.utils_dataset import svg2png
 from cad_transformer.Config.anno_config import TRAIN_CLASS_MAP_DICT, AnnoList
@@ -27,12 +30,15 @@ from cad_transformer.Method.eval import getMetricStr
 from cad_transformer.Method.label import mapSemanticLabel
 from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Method.path import createFileFolder, removeFile
-from cad_transformer.Method.graph import getGraphFromSVG
 from cad_transformer.Method.dxf import transDXFToSVG
+from cad_transformer.Method.graph import getGraphFromSVG
 from cad_transformer.Model.cad_transformer import CADTransformer
 
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
+
+dxf_mode_list = ['ezdxf', 'dxf_loader']
+dxf_mode = 'dxf_loader'
 
 
 class Detector(object):
@@ -64,6 +70,8 @@ class Detector(object):
             self.train_mode]['1']
         self.wait_key = 0
         self.window_name = '[Renderer][' + self.render_mode + ']'
+
+        self.dxf_loader = DXFLoader()
         return
 
     def loadModel(self, model_file_path):
@@ -132,16 +140,33 @@ class Detector(object):
     def detectDXFFile(self, dxf_file_path, print_progress=False):
         assert os.path.exists(dxf_file_path)
 
+        assert dxf_mode in dxf_mode_list
+
         tmp_svg_file_path = './tmp/input.svg'
         createFileFolder(tmp_svg_file_path)
         removeFile(tmp_svg_file_path)
 
-        if print_progress:
-            print("[INFO][Detector::detectDXFFile]")
-            print("\t start transDXFToSVG...")
-        transDXFToSVG(dxf_file_path, tmp_svg_file_path)
-        if print_progress:
-            print("Finished!")
+        if dxf_mode == 'ezdxf':
+            if print_progress:
+                print("[INFO][Detector::detectDXFFile]")
+                print("\t start transDXFToSVG...")
+            transDXFToSVG(dxf_file_path, tmp_svg_file_path)
+            if print_progress:
+                print("Finished!")
+        elif dxf_mode == 'dxf_loader':
+            if print_progress:
+                print("[INFO][Detector::detectDXFFile]")
+                print("\t start loadFile...")
+            self.dxf_loader.loadFile(dxf_file_path)
+            if print_progress:
+                print("Finished!")
+
+            if print_progress:
+                print("[INFO][Detector::detectDXFFile]")
+                print("\t start saveSVG...")
+            self.dxf_loader.saveSVG(tmp_svg_file_path)
+            if print_progress:
+                print("Finished!")
 
         assert os.path.exists(tmp_svg_file_path)
 
