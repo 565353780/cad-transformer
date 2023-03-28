@@ -12,5 +12,5 @@ if __name__ == "__main__":
     #  demo_train()
     #  demo_detect_dataset()
     #  demo_detect_svg()
-    demo_detect_dxf()
-    #  demo_detect_dxf_folder()
+    #  demo_detect_dxf()
+    demo_detect_dxf_folder()
