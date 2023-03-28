@@ -25,6 +25,7 @@ from cad_transformer.Config.image_net import IMAGENET_MEAN, IMAGENET_STD
 from cad_transformer.Dataset.cad import CADDataset
 from cad_transformer.Method.dxf import transDXFToSVG
 from cad_transformer.Method.eval import getMetricStr
+from cad_transformer.Method.svg import getSVGSize
 from cad_transformer.Method.graph import getGraphFromSVG
 from cad_transformer.Method.label import mapSemanticLabel
 from cad_transformer.Method.path import createFileFolder, removeFile
@@ -100,6 +101,14 @@ class Detector(object):
     def detectSVGFile(self, svg_file_path, print_progress=False):
         assert os.path.exists(svg_file_path)
 
+        svg_size = getSVGSize(svg_file_path)
+        upper_max_prim = int(self.cfg.max_prim * 1.1)
+        if svg_size > upper_max_prim:
+            print("[WARN][Detector::detectSVGFile]")
+            print("\t dxf file element size " + str(svg_size) + ">" +
+                  str(upper_max_prim) + ", skip detect!")
+            return None, None
+
         tmp_png_file_path = './tmp/input.png'
         createFileFolder(tmp_png_file_path)
         removeFile(tmp_png_file_path)
@@ -158,14 +167,6 @@ class Detector(object):
             self.dxf_loader.loadFile(dxf_file_path)
             if print_progress:
                 print("Finished!")
-
-            element_num = self.dxf_loader.size()
-            upper_max_prim = int(self.cfg.max_prim * 1.1)
-            if element_num > upper_max_prim:
-                print("[WARN][Detector::detectDXFFile]")
-                print("\t dxf file element size " + str(element_num) + ">" +
-                      str(upper_max_prim) + ", skip detect!")
-                return None
 
             if print_progress:
                 print("[INFO][Detector::detectDXFFile]")
@@ -271,6 +272,12 @@ class Detector(object):
             assert os.path.exists(svg_file_path)
 
             result, target = self.detectSVGFile(svg_file_path, print_progress)
+
+            if result is None:
+                print("[WARN][Detector::detectDatasetBySVGFile]")
+                print("\t detectSVGFile failed!")
+                print("\t", svg_file_path)
+                continue
 
             result_image = self.getResultImage(svg_file_path, result)
             #  self.renderer.show(self.wait_key, self.window_name)
