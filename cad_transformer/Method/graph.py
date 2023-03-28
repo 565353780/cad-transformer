@@ -68,7 +68,6 @@ def visualize_graph(root, centers, nns, vis_path):
         f.write(prettyxml)
     return True
 
-
 def getGraphFromSVG(svg_file_path,
                     max_degree=128,
                     avoid_self_idx=False,
