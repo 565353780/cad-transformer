@@ -12,27 +12,25 @@ import cv2
 import numpy as np
 import torch
 import torchvision.transforms as T
+from autocad_manage.Module.dxf_loader import DXFLoader
 from PIL import Image
+from svg_render.Module.renderer import Renderer
 from tqdm import tqdm
 
-from svg_render.Module.renderer import Renderer
-
-from autocad_manage.Module.dxf_loader import DXFLoader
-
-from cad_transformer.Pre.utils_dataset import svg2png
 from cad_transformer.Config.anno_config import TRAIN_CLASS_MAP_DICT, AnnoList
 from cad_transformer.Config.args import parse_args
 from cad_transformer.Config.default import _C as config
 from cad_transformer.Config.default import update_config
 from cad_transformer.Config.image_net import IMAGENET_MEAN, IMAGENET_STD
 from cad_transformer.Dataset.cad import CADDataset
-from cad_transformer.Method.eval import getMetricStr
-from cad_transformer.Method.label import mapSemanticLabel
-from cad_transformer.Method.time import getCurrentTime
-from cad_transformer.Method.path import createFileFolder, removeFile
 from cad_transformer.Method.dxf import transDXFToSVG
+from cad_transformer.Method.eval import getMetricStr
 from cad_transformer.Method.graph import getGraphFromSVG
+from cad_transformer.Method.label import mapSemanticLabel
+from cad_transformer.Method.path import createFileFolder, removeFile
+from cad_transformer.Method.time import getCurrentTime
 from cad_transformer.Model.cad_transformer import CADTransformer
+from cad_transformer.Pre.utils_dataset import svg2png
 
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
@@ -160,6 +158,14 @@ class Detector(object):
             self.dxf_loader.loadFile(dxf_file_path)
             if print_progress:
                 print("Finished!")
+
+            element_num = self.dxf_loader.size()
+            upper_max_prim = int(self.cfg.max_prim * 1.1)
+            if element_num > upper_max_prim:
+                print("[WARN][Detector::detectDXFFile]")
+                print("\t dxf file element size " + str(element_num) + ">" +
+                      str(upper_max_prim) + ", skip detect!")
+                return None
 
             if print_progress:
                 print("[INFO][Detector::detectDXFFile]")
@@ -307,6 +313,12 @@ class Detector(object):
             dxf_file_path = dxf_folder_path + dxf_filename
 
             result = self.detectDXFFile(dxf_file_path, print_progress)
+
+            if result is None:
+                print("[WARN][Detector::detectDXFFolder]")
+                print("\t detectDXFFile failed!")
+                print("\t", dxf_file_path)
+                continue
 
             result_image = self.getResultImage('./tmp/input.svg', result)
             #  self.renderer.show(self.wait_key, self.window_name)
