@@ -13,7 +13,7 @@ class DetectServer(object):
     def __init__(self,
                  model_file_path=None,
                  train_mode='all',
-                 port=9363,
+                 port=6006,
                  print_progress=False):
         self.model_file_path = None
         self.train_mode = train_mode
