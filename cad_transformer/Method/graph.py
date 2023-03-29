@@ -68,6 +68,7 @@ def visualize_graph(root, centers, nns, vis_path):
         f.write(prettyxml)
     return True
 
+
 def getGraphFromSVG(svg_file_path,
                     max_degree=128,
                     avoid_self_idx=False,
@@ -112,10 +113,23 @@ def getGraphFromSVG(svg_file_path,
                 raise RuntimeError("Parse path failed!{}, {}".format(
                     svg_file_path, path.attrib['d']))
             start = path_repre.point(0)
+            mid = path_repre.point(0.5)
             end = path_repre.point(1)
+
+            print(start)
+            print(mid)
+            print(end)
+            print((start + end) / 2.0)
+            exit()
+
+            if start is None or end is None:
+                continue
+
+            if mid is None:
+                mid = (start + end) / 2.0
+
             segments.append([start.real, start.imag, end.real, end.imag])
             # starts_ends.append([start.real, start.imag, end.real, end.imag, end.real, end.imag, start.real, start.imag])
-            mid = path_repre.point(0.5)
             # length = math.sqrt((start.real - end.real) ** 2 + (start.imag - end.imag) ** 2)
             length = path_repre.length()
             nodes.append([
