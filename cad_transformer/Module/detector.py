@@ -58,7 +58,7 @@ class Detector(object):
 
         self.scale = 7
 
-        self.renderer = Renderer(4000, 4000, 50, 2560, 1440)
+        self.renderer = Renderer(1920, 1080, 50, 2560, 1440)
         self.render_mode = 'type+semantic+selected_semantic+custom_semantic'
         self.render_mode = 'type+custom_semantic'
         self.line_width = 3
@@ -206,16 +206,11 @@ class Detector(object):
 
         if dxf_mode == 'dxf_layout_detector':
             self.dxf_layout_detector.detectLayout()
+            self.dxf_layout_detector.renderFrame()
 
             layout_image = self.dxf_layout_detector.image
 
-            print(result_image.shape)
-            print(layout_image.shape)
-
-            cv2.imshow('result_image', result_image)
-            cv2.imshow('layout_image', layout_image)
-            cv2.waitKey(0)
-            exit()
+            result_image = np.hstack([result_image, layout_image])
 
         return result_image
 
