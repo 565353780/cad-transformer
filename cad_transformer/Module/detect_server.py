@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+
 import gradio as gr
 
 from cad_transformer.Module.detector import Detector
@@ -30,6 +31,7 @@ class DetectServer(object):
 
     def getDXFResultImage(self, dxf_file):
         dxf_file_path = dxf_file.name
+        print(dxf_file_path)
         assert os.path.exists(dxf_file_path)
 
         result = self.detector.detectDXFFile(dxf_file_path,
@@ -43,9 +45,7 @@ class DetectServer(object):
         inputs = gr.File()
         outputs = gr.Image()
 
-        interface = gr.Interface(fn=self.getDXFResultImage,
-                                 inputs=inputs,
-                                 outputs=outputs)
+        interface = gr.Interface(self.getDXFResultImage, inputs, outputs)
 
         interface.launch(server_ip='0.0.0.0', server_port=self.port)
         return True
