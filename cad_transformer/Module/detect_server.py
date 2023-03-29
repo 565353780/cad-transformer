@@ -47,5 +47,5 @@ class DetectServer(object):
 
         interface = gr.Interface(self.getDXFResultImage, inputs, outputs)
 
-        interface.launch(server_ip='0.0.0.0', server_port=self.port)
+        interface.launch(server_name='0.0.0.0', server_port=self.port)
         return True
