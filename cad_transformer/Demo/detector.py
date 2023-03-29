@@ -50,3 +50,15 @@ def demo_dxf_folder():
     detector.loadModel(model_file_path)
     detector.detectDXFFolder(dxf_folder_path, print_progress)
     return True
+
+
+def demo_dxf_all_sub_folder():
+    model_file_path = "./output/20230322_16:04:51_wall/model_best.pth"
+    train_mode = 'wall'
+    dxf_folder_path = '/home/chli/chLi/CAD/DXF/House_1/'
+    print_progress = True
+
+    detector = Detector(train_mode)
+    detector.loadModel(model_file_path)
+    detector.detectDXFAllSubFolder(dxf_folder_path, print_progress)
+    return True

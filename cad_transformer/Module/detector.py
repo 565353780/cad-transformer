@@ -333,3 +333,41 @@ class Detector(object):
             cv2.imwrite(save_result_image_folder_path + str(data_idx) + '.png',
                         result_image)
         return True
+
+    def detectDXFAllSubFolder(self, dxf_folder_path, print_progress=False):
+        save_result_image_folder_path = './render/detect/dxf_all_sub/' + getCurrentTime(
+        ) + '/'
+        os.makedirs(save_result_image_folder_path)
+
+        dxf_file_path_list = []
+
+        for root, _, files in os.walk(dxf_folder_path):
+            for file_name in files:
+                if file_name[-4:] != '.dxf':
+                    continue
+
+                dxf_file_path = root + '/' + file_name
+                dxf_file_path_list.append(dxf_file_path)
+
+        for_data = range(len(dxf_file_path_list))
+        if print_progress:
+            print("[INFO][Detector::detectDXFAllSubFolder]")
+            print("\t start detect dxf files in all sub folders...")
+            for_data = tqdm(for_data)
+        for data_idx in for_data:
+            dxf_file_path = dxf_file_path_list[data_idx]
+
+            result = self.detectDXFFile(dxf_file_path, print_progress)
+
+            if result is None:
+                print("[WARN][Detector::detectDXFAllSubFolder]")
+                print("\t detectDXFFile failed!")
+                print("\t", dxf_file_path)
+                continue
+
+            result_image = self.getResultImage('./tmp/input.svg', result)
+            #  self.renderer.show(self.wait_key, self.window_name)
+
+            cv2.imwrite(save_result_image_folder_path + str(data_idx) + '.png',
+                        result_image)
+        return True
