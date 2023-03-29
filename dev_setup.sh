@@ -3,6 +3,4 @@ pip3 install torch torchvision torchaudio \
 
 pip install sklearn pillow opencv-python matplotlib \
   scipy tqdm gdown svgpathtools pandas yacs lxml \
-  cairosvg scikit-learn timm tensorboard ezdxf
-
-pip install gradio
+  cairosvg scikit-learn timm tensorboard ezdxf gradio
