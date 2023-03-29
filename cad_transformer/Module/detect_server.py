@@ -40,12 +40,8 @@ class DetectServer(object):
         return result_image
 
     def start(self):
-        inputs = gr.inputs.File(self,
-                                file_count="single",
-                                type="file",
-                                label=None,
-                                optional=False)
-        outputs = gr.outputs.Image()
+        inputs = gr.File()
+        outputs = gr.Image()
 
         interface = gr.Interface(fn=self.getDXFResultImage,
                                  inputs=inputs,
