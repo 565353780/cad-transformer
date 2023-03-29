@@ -5,6 +5,7 @@ __pycache__
 output
 logs
 render
+flagged
 
 # tmp file
 tmp
