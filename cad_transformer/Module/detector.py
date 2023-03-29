@@ -161,22 +161,7 @@ class Detector(object):
             transDXFToSVG(dxf_file_path, tmp_svg_file_path)
             if print_progress:
                 print("Finished!")
-        elif dxf_mode == 'dxf_loader':
-            if print_progress:
-                print("[INFO][Detector::detectDXFFile]")
-                print("\t start loadFile...")
-            self.dxf_layout_detector.loadFile(dxf_file_path)
-            if print_progress:
-                print("Finished!")
-
-            if print_progress:
-                print("[INFO][Detector::detectDXFFile]")
-                print("\t start saveSVG...")
-            self.dxf_layout_detector.saveSVG(tmp_svg_file_path)
-            if print_progress:
-                print("Finished!")
-
-        elif dxf_mode == 'dxf_layout_detector':
+        elif dxf_mode in ['dxf_loader', 'dxf_layout_detector']:
             if print_progress:
                 print("[INFO][Detector::detectDXFFile]")
                 print("\t start loadFile...")
