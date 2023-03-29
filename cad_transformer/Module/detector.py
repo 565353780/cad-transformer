@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import torch
 import torchvision.transforms as T
-from autocad_manage.Module.dxf_loader import DXFLoader
+from autocad_manage.Module.dxf_layout_detector import DXFLayoutDetector
 from PIL import Image
 from svg_render.Module.renderer import Renderer
 from tqdm import tqdm
@@ -36,8 +36,8 @@ from cad_transformer.Pre.utils_dataset import svg2png
 torch.backends.cudnn.benchmark = True
 torch.autograd.set_detect_anomaly(True)
 
-dxf_mode_list = ['ezdxf', 'dxf_loader']
-dxf_mode = 'dxf_loader'
+dxf_mode_list = ['ezdxf', 'dxf_loader', 'dxf_layout_detector']
+dxf_mode = 'dxf_layout_detector'
 
 
 class Detector(object):
@@ -60,6 +60,7 @@ class Detector(object):
 
         self.renderer = Renderer(4000, 4000, 50, 2560, 1440)
         self.render_mode = 'type+semantic+selected_semantic+custom_semantic'
+        self.render_mode = 'type+custom_semantic'
         self.line_width = 3
         self.text_color = [0, 0, 255]
         self.text_size = 1
@@ -70,7 +71,7 @@ class Detector(object):
         self.wait_key = 0
         self.window_name = '[Renderer][' + self.render_mode + ']'
 
-        self.dxf_loader = DXFLoader()
+        self.dxf_layout_detector = DXFLayoutDetector()
         return
 
     def loadModel(self, model_file_path):
@@ -164,14 +165,29 @@ class Detector(object):
             if print_progress:
                 print("[INFO][Detector::detectDXFFile]")
                 print("\t start loadFile...")
-            self.dxf_loader.loadFile(dxf_file_path)
+            self.dxf_layout_detector.loadFile(dxf_file_path)
             if print_progress:
                 print("Finished!")
 
             if print_progress:
                 print("[INFO][Detector::detectDXFFile]")
                 print("\t start saveSVG...")
-            self.dxf_loader.saveSVG(tmp_svg_file_path)
+            self.dxf_layout_detector.saveSVG(tmp_svg_file_path)
+            if print_progress:
+                print("Finished!")
+
+        elif dxf_mode == 'dxf_layout_detector':
+            if print_progress:
+                print("[INFO][Detector::detectDXFFile]")
+                print("\t start loadFile...")
+            self.dxf_layout_detector.loadFile(dxf_file_path)
+            if print_progress:
+                print("Finished!")
+
+            if print_progress:
+                print("[INFO][Detector::detectDXFFile]")
+                print("\t start saveSVG...")
+            self.dxf_layout_detector.saveSVG(tmp_svg_file_path)
             if print_progress:
                 print("Finished!")
 
@@ -186,7 +202,22 @@ class Detector(object):
                                  self.text_size, self.text_line_width,
                                  self.print_progress,
                                  self.selected_semantic_idx_list, result)
-        return self.renderer.getRenderImage()
+        result_image = self.renderer.getRenderImage()
+
+        if dxf_mode == 'dxf_layout_detector':
+            self.dxf_layout_detector.detectLayout()
+
+            layout_image = self.dxf_layout_detector.image
+
+            print(result_image.shape)
+            print(layout_image.shape)
+
+            cv2.imshow('result_image', result_image)
+            cv2.imshow('layout_image', layout_image)
+            cv2.waitKey(0)
+            exit()
+
+        return result_image
 
     def detectDataset(self,
                       split='test',
