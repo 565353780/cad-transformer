@@ -39,6 +39,7 @@ class DetectServer(object):
 
         tmp_svg_file_path = './tmp/input.svg'
         result_image = self.detector.getResultImage(tmp_svg_file_path, result)
+        result_image = result_image[..., ::-1]
         return result_image
 
     def start(self):
