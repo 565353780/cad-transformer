@@ -5,4 +5,4 @@ pip install sklearn pillow opencv-python matplotlib \
   scipy tqdm gdown svgpathtools pandas yacs lxml \
   cairosvg scikit-learn timm tensorboard ezdxf
 
-pip istall gradio
+pip install gradio
