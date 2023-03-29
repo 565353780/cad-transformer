@@ -116,12 +116,6 @@ def getGraphFromSVG(svg_file_path,
             mid = path_repre.point(0.5)
             end = path_repre.point(1)
 
-            print(start)
-            print(mid)
-            print(end)
-            print((start + end) / 2.0)
-            exit()
-
             if start is None or end is None:
                 continue
 
