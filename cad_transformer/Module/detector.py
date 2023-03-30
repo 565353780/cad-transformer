@@ -199,6 +199,27 @@ class Detector(object):
 
         return result_image
 
+    def getResultImageList(self, svg_file_path, result):
+        result_image_list = []
+
+        self.renderer.renderFile(svg_file_path, self.render_mode,
+                                 self.line_width, self.text_color,
+                                 self.text_size, self.text_line_width,
+                                 self.print_progress,
+                                 self.selected_semantic_idx_list, result)
+
+        result_image_list += self.renderer.getRenderImageList()
+
+        if dxf_mode == 'dxf_layout_detector':
+            self.dxf_layout_detector.detectLayout()
+            self.dxf_layout_detector.renderFrame()
+
+            layout_image = self.dxf_layout_detector.image
+
+            result_image_list.append(layout_image)
+
+        return result_image_list
+
     def detectDataset(self,
                       split='test',
                       load_num_max=None,

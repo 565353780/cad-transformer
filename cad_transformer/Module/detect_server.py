@@ -37,14 +37,37 @@ class DetectServer(object):
 
         tmp_svg_file_path = './tmp/input.svg'
         result_image = self.detector.getResultImage(tmp_svg_file_path, result)
-        result_image = result_image[..., ::-1]
+        #  result_image = result_image[..., ::-1]
         return result_image
 
-    def start(self):
+    def getDXFResultImageInterface(self):
         inputs = gr.File()
-        outputs = gr.Image()
+        outputs = gr.Image(invert_colors=True)
 
         interface = gr.Interface(self.getDXFResultImage, inputs, outputs)
+        return interface
+
+    def getDXFResultImageList(self, dxf_file):
+        dxf_file_path = dxf_file.name
+        assert os.path.exists(dxf_file_path)
+
+        result = self.detector.detectDXFFile(dxf_file_path,
+                                             self.print_progress)
+
+        tmp_svg_file_path = './tmp/input.svg'
+        Input, CADTransformer, LayoutDetector = self.detector.getResultImageList(
+            tmp_svg_file_path, result)
+        return Input, CADTransformer, LayoutDetector
+
+    def getDXFResultImageListInterface(self):
+        inputs = gr.File()
+        outputs = [gr.Image(invert_colors=True) for _ in range(3)]
+
+        interface = gr.Interface(self.getDXFResultImageList, inputs, outputs)
+        return interface
+
+    def start(self):
+        interface = self.getDXFResultImageListInterface()
 
         interface.launch(server_name='0.0.0.0', server_port=self.port)
         return True
