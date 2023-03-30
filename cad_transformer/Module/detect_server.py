@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+
 import gradio as gr
 
 from cad_transformer.Module.detector import Detector
@@ -37,12 +38,14 @@ class DetectServer(object):
 
         tmp_svg_file_path = './tmp/input.svg'
         result_image = self.detector.getResultImage(tmp_svg_file_path, result)
-        #  result_image = result_image[..., ::-1]
+        result_image = result_image[..., ::-1]
         return result_image
 
     def getDXFResultImageInterface(self):
         inputs = gr.File()
-        outputs = gr.Image(invert_colors=True)
+        #FIXME: why invert_colors not work?
+        outputs = gr.Image(label='Input+CADTransformer+DXFLayoutDetector',
+                           invert_colors=True)
 
         interface = gr.Interface(self.getDXFResultImage, inputs, outputs)
         return interface
@@ -55,13 +58,21 @@ class DetectServer(object):
                                              self.print_progress)
 
         tmp_svg_file_path = './tmp/input.svg'
-        Input, CADTransformer, LayoutDetector = self.detector.getResultImageList(
+        result_image_list = self.detector.getResultImageList(
             tmp_svg_file_path, result)
-        return Input, CADTransformer, LayoutDetector
+        for i in range(len(result_image_list)):
+            result_image_list[i] = result_image_list[i][..., ::-1]
+
+        Input, CADTransformer, DXFLayoutDetector = result_image_list
+        return Input, CADTransformer, DXFLayoutDetector
 
     def getDXFResultImageListInterface(self):
         inputs = gr.File()
-        outputs = [gr.Image(invert_colors=True) for _ in range(3)]
+        outputs = [
+            gr.Image(label='Input', invert_colors=True),
+            gr.Image(label='CADTransformer', invert_colors=True),
+            gr.Image(label='DXFLayoutDetector', invert_colors=True)
+        ]
 
         interface = gr.Interface(self.getDXFResultImageList, inputs, outputs)
         return interface
